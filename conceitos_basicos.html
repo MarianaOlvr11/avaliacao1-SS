@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 1 - Conceitos Basicos da Segurança da Informação</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-hover: #222633;
+  --border: #2a2e3d;
+  --text: #e4e6ed;
+  --text-muted: #7a7f93;
+  --accent: #6c5ce7;
+  --accent-glow: rgba(108, 92, 231, 0.25);
+  --correct: #00b894;
+  --correct-bg: rgba(0, 184, 148, 0.1);
+  --correct-border: rgba(0, 184, 148, 0.4);
+  --wrong: #e17055;
+  --wrong-bg: rgba(225, 112, 85, 0.1);
+  --wrong-border: rgba(225, 112, 85, 0.4);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.noise {
+  position: fixed; inset: 0; z-index: -1; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.app {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 20px 100px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 40px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Progress */
+.progress-bar-container {
+  background: var(--surface);
+  border-radius: 100px;
+  height: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  font-family: 'Space Mono', monospace;
+}
+
+/* Score panel */
+.score-panel {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.score-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Mono', monospace;
+}
+
+.score-chip.correct-chip {
+  background: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct);
+}
+
+.score-chip.wrong-chip {
+  background: var(--wrong-bg);
+  border: 1px solid var(--wrong-border);
+  color: var(--wrong);
+}
+
+/* Question card */
+.question-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.question-number {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+}
+
+.question-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* Options */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: var(--text);
+  position: relative;
+}
+
+.option:hover:not(.disabled) {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+.option .letter {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(108, 92, 231, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(108, 92, 231, 0.2);
+  transition: all 0.2s ease;
+}
+
+.option.selected {
+  border-color: var(--accent);
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.option.selected .letter {
+  background: var(--accent);
+  color: #fff;
+}
+
+.option.correct-answer {
+  border-color: var(--correct-border) !important;
+  background: var(--correct-bg) !important;
+}
+
+.option.correct-answer .letter {
+  background: var(--correct) !important;
+  color: #fff !important;
+  border-color: var(--correct) !important;
+}
+
+.option.wrong-answer {
+  border-color: var(--wrong-border) !important;
+  background: var(--wrong-bg) !important;
+}
+
+.option.wrong-answer .letter {
+  background: var(--wrong) !important;
+  color: #fff !important;
+  border-color: var(--wrong) !important;
+}
+
+.option.disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.option.correct-answer.disabled,
+.option.wrong-answer.disabled {
+  opacity: 1;
+}
+
+/* Buttons */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-hover);
+}
+
+/* Results */
+.results-card {
+  text-align: center;
+  padding: 48px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  animation: fadeIn 0.5s ease;
+}
+
+.results-card .score-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  border: 4px solid var(--accent);
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+
+.score-circle .big-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.score-circle .label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.results-card h2 {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+}
+
+.results-card p {
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.results-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Question nav dots */
+.nav-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.nav-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.nav-dot:hover { border-color: var(--accent); }
+.nav-dot.active { border-color: var(--accent); background: rgba(108,92,231,0.15); color: var(--accent); }
+.nav-dot.answered-correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct); }
+.nav-dot.answered-wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--wrong); }
+
+/* Shuffle toggle */
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.toggle-label input { display: none; }
+
+.toggle-track {
+  width: 38px;
+  height: 20px;
+  border-radius: 100px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.toggle-label input:checked + .toggle-track {
+  background: var(--accent);
+}
+
+.toggle-label input:checked + .toggle-track::after {
+  left: 20px;
+  background: #fff;
+}
+
+/* Feedback toast */
+.feedback {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  animation: fadeIn 0.25s ease;
+}
+
+.feedback.correct-fb {
+  background: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct);
+}
+
+.feedback.wrong-fb {
+  background: var(--wrong-bg);
+  border: 1px solid var(--wrong-border);
+  color: var(--wrong);
+}
+
+@media (max-width: 600px) {
+  .app { padding: 16px 14px 80px; }
+  .question-card { padding: 20px 16px; }
+  .option { padding: 12px 14px; font-size: 0.88rem; }
+  .header h1 { font-size: 1.2rem; }
+  .nav-dot { width: 28px; height: 28px; font-size: 0.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "Um atacante obtém credenciais de e-mail de um funcionário e tenta usar a conta para acessar sistemas internos. Qual controle mais direto reduz o risco de uso indevido dessas credenciais?",
+    opts: [
+      "Trocar o cabo de rede.",
+      "MFA e detecção de login anômalo (alertas por risco).",
+      "Aumentar o brilho da tela.",
+      "Desativar backups.",
+      "Usar arquivos PDF em vez de DOC."
+    ],
+    answer: 1
+  },
+  {
+    q: "Um sistema exige dois controles independentes para autorizar uma ação crítica, como credencial e aprovação. Que princípio está sendo usado?",
+    opts: [
+      "Separação de privilégios.",
+      "Elo mais fraco.",
+      "Triangulização.",
+      "Disponibilidade.",
+      "Obscuridade."
+    ],
+    answer: 0
+  },
+  {
+    q: "Uma empresa adota perfis diferentes para representante comercial e cliente externo. Representantes veem logística e preços; clientes veem apenas preços públicos. Qual objetivo principal desse desenho?",
+    opts: [
+      "Reduzir exposição de dados sensíveis por autorização baseada em função (RBAC).",
+      "Eliminar logs para reduzir armazenamento.",
+      "Permitir que clientes editem estoque para agilizar vendas.",
+      "Evitar qualquer autenticação para melhorar usabilidade.",
+      "Centralizar senhas em um único usuário compartilhado."
+    ],
+    answer: 0
+  },
+  {
+    q: "Em uma equipe pequena, um administrador afirma que não precisa revisar configurações padrão e que ataques são raros. A empresa expõe um serviço com credenciais padrão e, em pouco tempo, scripts automatizados tentam combinações conhecidas e conseguem acesso. Você precisa identificar o equívoco por trás da decisão.",
+    opts: [
+      "A crença de que domínios novos impedem phishing.",
+      "A suposição de que Wi‑Fi é o único vetor de ameaça.",
+      "A suposição de que contas genéricas melhoram auditoria.",
+      "A crença de que ataques sempre exigem presença física no datacenter.",
+      "A ideia de que criptografia impede qualquer ataque por força bruta.",
+      "A crença de que backups substituem autenticação.",
+      "A ideia de que logs aumentam o risco e devem ser desativados.",
+      "A suposição de que RBAC só existe para bancos e não para TI.",
+      "A ideia de que firewalls eliminam necessidade de senha forte.",
+      "Subestimar a ameaça automatizada e acreditar que nunca acontecerá conosco (mito de segurança)."
+    ],
+    answer: 9
+  },
+  {
+    q: "Uma empresa sofreu um ataque destrutivo que interrompeu operações globais, exigindo reconstrução de servidores e restauração de serviços. No pós-incidente, a diretoria quer saber por que investir em continuidade de negócios é parte da estratégia de segurança, mesmo quando defesas falham. Qual afirmação resume melhor essa justificativa?",
+    opts: [
+      "Continuidade serve apenas para desastres naturais, não para incidentes cibernéticos.",
+      "Continuidade garante confidencialidade automática dos dados.",
+      "Continuidade reduz impacto e tempo de recuperação quando incidentes inevitáveis afetam operações críticas.",
+      "Continuidade elimina a necessidade de controles preventivos, pois basta restaurar depois.",
+      "Continuidade impede phishing porque orienta usuários a não clicar.",
+      "Continuidade é tarefa exclusiva do provedor de nuvem, não da organização.",
+      "Continuidade aumenta risco por exigir backups; portanto deve ser evitada.",
+      "Continuidade é substituída por firewall; se há firewall, não há necessidade de plano.",
+      "Continuidade é igual a criptografia; basta criptografar e não há interrupção.",
+      "Continuidade só faz sentido para empresas de TI, não para varejo ou indústria."
+    ],
+    answer: 2
+  },
+  {
+    q: "Uma empresa utiliza um serviço de armazenamento em nuvem para arquivos de projetos, e equipes costumam compartilhar links públicos temporários para enviar documentos a parceiros. Em uma revisão, você descobre que vários links foram criados como públicos e sem data de expiração, e que alguns documentos continham informações sensíveis como contratos e dados pessoais. Ninguém consegue dizer com precisão quais links ainda estão ativos. A diretoria pede uma medida que reduza a probabilidade de exposição acidental e facilite auditoria e revogação de acessos.",
+    opts: [
+      "Continuar com links públicos sem expiração, mas pedir que os usuários avisem quando não precisarem mais.",
+      "Substituir links por envio de anexos por e-mail sem criptografia, pois é mais rastreável.",
+      "Adotar compartilhamento autenticado com expiração padrão, políticas de acesso mínimo e inventário/auditoria de links e permissões.",
+      "Desativar logs do serviço de nuvem para evitar que informações de acesso vazem.",
+      "Permitir que parceiros usem a mesma conta corporativa, pois isso facilita governança.",
+      "Colocar os arquivos em uma porta não padrão e ocultar nomes de pastas para reduzir descoberta.",
+      "Criptografar localmente e manter links públicos sem expiração, pois criptografia elimina necessidade de controle de acesso.",
+      "Mudar a senha do Wi‑Fi corporativo mensalmente para evitar exposição em nuvem.",
+      "Trocar o provedor de nuvem sem alterar a prática de links públicos sem expiração.",
+      "Usar RAID no storage local para reduzir o risco de exposição de links."
+    ],
+    answer: 2
+  },
+  {
+    q: "Um órgão público instala centenas de câmeras IP para monitoramento. Muitas ficam com serviços expostos e firmware desatualizado. Um malware do tipo botnet compromete parte dessas câmeras e as usa para gerar tráfego massivo contra um portal de serviços ao cidadão. Você precisa nomear o tipo de ataque mais associado ao uso coordenado de muitos dispositivos IoT comprometidos.",
+    opts: [
+      "Quebra de criptografia AES por força bruta.",
+      "Assinatura digital forjada de documentos PDF.",
+      "Rootkit em kernel de servidores Linux.",
+      "Controle de versão corrompido em repositório de código.",
+      "Exfiltração de chaves TLS por side-channel.",
+      "SQL injection no banco de dados do portal.",
+      "Phishing por SMS direcionado ao cidadão.",
+      "Rogue access point em Wi‑Fi interno.",
+      "DDoS (negação de serviço distribuída).",
+      "Engenharia social presencial em balcões de atendimento."
+    ],
+    answer: 8
+  },
+  {
+    q: "Um processo de pagamento exige que duas condições independentes sejam satisfeitas: credencial do operador e aprovação de um supervisor. O objetivo é reduzir fraude interna e evitar que uma única conta comprometida finalize pagamentos. Qual princípio de segurança essa exigência representa mais diretamente?",
+    opts: [
+      "Privilégio mínimo.",
+      "Hashing.",
+      "Triangulização.",
+      "Air gap.",
+      "Mediação completa.",
+      "Disponibilidade.",
+      "Separação de privilégios (separação de funções/dupla autorização).",
+      "Balanceamento de carga.",
+      "Confidencialidade.",
+      "Ofuscação."
+    ],
+    answer: 6
+  },
+  {
+    q: "Para reduzir incidentes, uma organização impõe política extremamente restritiva: bloqueia anexos, compartilhamento externo e ferramentas necessárias ao trabalho. Como consequência, funcionários começam a enviar arquivos por canais pessoais e a reutilizar senhas em serviços não aprovados. Você precisa explicar qual dilema clássico de segurança esse comportamento revela.",
+    opts: [
+      "Trade-off entre disponibilidade e VPN: VPN sempre derruba sistemas.",
+      "Trade-off entre nuvem e local: nuvem elimina shadow IT automaticamente.",
+      "Trade-off entre autenticação e logs: logs substituem autenticação.",
+      "Trade-off entre roteamento e IP: mudar IP evita atalhos.",
+      "Trade-off entre ofuscação e patches: patching reduz segurança.",
+      "Trade-off entre hashing e e-mail: hashing impede anexos.",
+      "Trade-off entre criptografia e RAID: criptografia impede redundância.",
+      "Trade-off entre segurança e usabilidade/produtividade: controles inviáveis geram atalhos e shadow IT.",
+      "Trade-off entre integridade e backups: backups sempre reduzem produtividade.",
+      "Trade-off entre firewall e DNS: firewall sempre quebra nomes."
+    ],
+    answer: 7
+  },
+  {
+    q: "Uma auditoria encontra uma rota alternativa em um serviço legado: certas chamadas acessam dados sem passar pelas verificações de autorização aplicadas ao restante do sistema. Isso permite que um usuário com permissão baixa obtenha dados que não deveria. Qual princípio foi quebrado nesse desenho?",
+    opts: [
+      "Virtualização.",
+      "Disponibilidade por redundância.",
+      "Integridade por controle de versão.",
+      "RAID.",
+      "Balanceamento de carga.",
+      "Separação de privilégios.",
+      "Segurança por obscuridade.",
+      "Mediação completa: todo acesso deve ser verificado pelo mecanismo de segurança, sem atalhos.",
+      "Replicação síncrona.",
+      "Confidencialidade por criptografia de disco."
+    ],
+    answer: 7
+  },
+  {
+    q: "Uma universidade oferece acesso remoto a sistemas acadêmicos e financeiros para docentes e prestadores de serviço. Um prestador terceirizado recebeu acesso para gerar relatórios de uma área específica, mas o contrato não descrevia claramente limites técnicos. Com o tempo, para resolver chamados mais rápido, foram concedidos privilégios adicionais e a conta passou a enxergar bases de dados que não eram necessárias ao escopo. Em uma auditoria, a equipe percebe que esse tipo de expansão gradual de permissões aconteceu em vários contratos, sempre motivada por urgência operacional. Você precisa explicar qual prática de segurança está faltando e qual é o princípio violado quando permissões crescem sem necessidade e sem revisão.",
+    opts: [
+      "Uso de senhas mais longas como única medida, sem revisar permissões concedidas.",
+      "Desativação de logs para reduzir evidências de acesso e diminuir risco reputacional.",
+      "Governança de acessos com revisão periódica e privilégio mínimo, evitando creep de privilégios ao longo do tempo.",
+      "Segurança por obscuridade, escondendo o nome das bases de dados para evitar que terceiros saibam que existem.",
+      "RAID em servidores, pois redundância reduz impacto de permissões erradas.",
+      "Troca do sistema acadêmico por outro, mantendo a mesma política de permissões amplas.",
+      "Criptografia de disco, que por si só elimina o problema de excesso de privilégios.",
+      "Disponibilidade, pois dar mais acesso garante que o prestador não fique bloqueado e evita indisponibilidade.",
+      "Balanceamento de carga, já que maior desempenho reduz a necessidade de permissões amplas.",
+      "Integridade, porque permissões amplas reduzem erros de acesso e impedem alterações indevidas."
+    ],
+    answer: 2
+  },
+  {
+    q: "Uma organização quer reduzir o impacto de falhas e incidentes inevitáveis, garantindo que operações essenciais continuem ou sejam restauradas rapidamente. Qual área de gestão isso descreve?",
+    opts: [
+      "Continuidade de negócios e recuperação de desastres.",
+      "Ofuscação de código.",
+      "Balanceamento de carga como único controle.",
+      "Engenharia reversa.",
+      "Mineração de dados."
+    ],
+    answer: 0
+  },
+  {
+    q: "Em um comitê de segurança, você apresenta que controles não são apenas tecnológicos. Um gerente insiste que basta comprar uma nova ferramenta, mas incidentes recentes envolveram cliques em links e reutilização de senhas. Você precisa apontar qual ação representa melhor o aspecto humano/educacional e por que ela é crítica.",
+    opts: [
+      "Instalar RAID em todas as estações.",
+      "Usar portas não padrão em todos os serviços.",
+      "Proibir atualizações automáticas para evitar indisponibilidade.",
+      "Substituir HTTPS por HTTP para depurar mais facilmente.",
+      "Treinamento contínuo e conscientização, com simulações, para reduzir erro humano e abuso de credenciais.",
+      "Trocar todos os switches por modelos mais rápidos.",
+      "Aumentar a largura de banda de Internet.",
+      "Concentrar todas as permissões em uma conta mestre para simplificar.",
+      "Remover logs para diminuir consumo de disco.",
+      "Desativar autenticação para reduzir chamados de suporte."
+    ],
+    answer: 4
+  },
+  {
+    q: "Uma investigação mostra que credenciais de e-mail foram roubadas e usadas para tentar acessar sistemas internos. A empresa já exige senhas longas, mas os atacantes ainda conseguem login quando obtêm a senha por phishing. Você precisa propor o controle mais direto para reduzir o valor de uma senha roubada e aumentar a detecção de abuso.",
+    opts: [
+      "Criptografar o disco do servidor de e-mail e remover MFA.",
+      "Usar apenas perguntas de segurança como fator adicional.",
+      "MFA combinado com monitoramento de logins anômalos e políticas de sessão por risco.",
+      "Desativar logs para evitar exposição de endereços IP dos usuários.",
+      "Reduzir a complexidade de senha para facilitar memorização.",
+      "Trocar o provedor de e-mail sem mudar controles de autenticação.",
+      "Desativar VPN e permitir acesso direto aos sistemas pela Internet.",
+      "Substituir o e-mail por mensagens SMS sem autenticação.",
+      "Publicar a lista de IPs internos para facilitar suporte remoto.",
+      "Permitir que usuários compartilhem senhas para reduzir esquecimentos."
+    ],
+    answer: 2
+  },
+  {
+    q: "Uma filial tem acesso à intranet corporativa, ao sistema de logística, ao e-mail e a um banco de dados financeiro central. Um atacante obtém credenciais de um usuário da filial por phishing e entra via VPN. Nos logs, você observa que após o login inicial ele tenta se conectar a vários serviços internos e procura saltar de um servidor para outro até alcançar o banco financeiro. O diretor pergunta qual é o risco operacional mais bem descrito por esse comportamento, além do simples roubo de senha.",
+    opts: [
+      "Redução automática de privilégios ao detectar login remoto.",
+      "Melhoria de disponibilidade por RAID.",
+      "Assinatura digital de e-mails para impedir anexos maliciosos.",
+      "Criptografia de dados em repouso por padrão.",
+      "Autenticação sem senha elimina a necessidade de monitoramento.",
+      "Isolamento físico completo do ambiente (air gap).",
+      "Integridade garantida por backups diários, independentemente do ataque.",
+      "Movimentação lateral a partir de um ponto comprometido para alcançar serviços e ativos mais valiosos.",
+      "Balanceamento de carga aplicado aos servidores da filial.",
+      "Bloqueio de DNS que impede acesso a bancos de dados."
+    ],
+    answer: 7
+  },
+  {
+    q: "Durante um incidente, a empresa precisa priorizar ações em uma integração com terceiros. Os logs mostram que uma conta de fornecedor acessou endpoints que não faziam parte do contrato e realizou um volume incomum de consultas durante a madrugada. A equipe suspeita de comprometimento do fornecedor, mas o serviço não pode ser interrompido totalmente porque o parceiro é essencial para a operação do dia seguinte. Qual ação é a melhor primeira resposta técnica para reduzir imediatamente o impacto, mantendo o mínimo operacional, enquanto a investigação continua?",
+    opts: [
+      "Permitir que o fornecedor compartilhe a conta com subcontratados para acelerar correções.",
+      "Trocar todos os servidores de lugar no datacenter para confundir o atacante.",
+      "Desligar a Internet da empresa por 24 horas, mesmo que a operação pare completamente.",
+      "Desativar todos os logs para impedir que o atacante descubra que foi detectado.",
+      "Publicar um comunicado público imediato com detalhes técnicos completos antes de conter o acesso.",
+      "Manter o acesso como está e aguardar mais evidências para não interromper nada.",
+      "Conceder privilégios administrativos ao fornecedor para que ele ajude a investigar rapidamente.",
+      "Revogar ou limitar o escopo da credencial do fornecedor, reduzindo permissões ao mínimo necessário e aplicando restrições temporárias monitoradas.",
+      "Alterar apenas o nome dos endpoints e rotas, mantendo escopo e credenciais iguais.",
+      "Trocar o provedor de nuvem como ação emergencial, mantendo permissões amplas."
+    ],
+    answer: 7
+  },
+  {
+    q: "Uma empresa de manufatura opera com matriz, duas filiais e três fornecedores estratégicos conectados por VPN site-to-site. O fornecedor de logística administra um portal B2B e recebe acesso a uma API interna para consultar estoque e registrar coleta. Para acelerar integrações, a empresa forneceu ao fornecedor um token de API sem expiração e com permissão ampla de leitura em vários endpoints. Semanas depois, o fornecedor sofre um comprometimento e o atacante usa o token para consultar dados além do necessário. Você foi chamado para propor a correção mais eficaz, que reduza o impacto mesmo se um parceiro voltar a ser comprometido.",
+    opts: [
+      "Criptografar o banco de dados, mas manter o token sem expiração e sem escopo.",
+      "Bloquear completamente o parceiro e substituir por acesso administrativo interno compartilhado.",
+      "Usar apenas IP allowlist, mantendo token sem escopo e sem expiração.",
+      "Permitir acesso amplo ao parceiro, mas limitar o horário de acesso a apenas dias úteis.",
+      "Trocar o provedor de nuvem, mantendo o mesmo desenho de permissões e tokens.",
+      "Substituir a API por compartilhamento de planilhas via e-mail, mantendo as mesmas permissões de acesso aos dados.",
+      "Colocar a API em uma porta não padrão e ocultar a documentação para reduzir descoberta.",
+      "Desativar logs da API para evitar que o atacante descubra endpoints disponíveis.",
+      "Manter o token permanente, mas exigir senha mais longa para os funcionários internos.",
+      "Aplicar escopo mínimo e expiração/rotação de tokens (com revogação), segmentar o acesso do parceiro e monitorar uso da API."
+    ],
+    answer: 9
+  },
+  {
+    q: "Um administrador concede acesso de superusuário para um serviço de rede que só precisa ler um diretório específico. Qual problema isso cria?",
+    opts: [
+      "Evita phishing em e-mails.",
+      "Aumenta a confidencialidade porque há mais permissões.",
+      "Melhora a integridade porque root impede alterações.",
+      "Amplia o impacto de um comprometimento do serviço, violando privilégio mínimo.",
+      "Reduz a necessidade de monitoramento."
+    ],
+    answer: 3
+  },
+  {
+    q: "Uma equipe publica uma lista de clientes para marketing sem revisar permissões do bucket de nuvem. O dado fica acessível publicamente por semanas. Qual falha é a mais provável nesse tipo de incidente?",
+    opts: [
+      "Excesso de backups locais em fita.",
+      "Criptografia forte demais que impede acesso legítimo.",
+      "Uso de hashing em arquivos PDF.",
+      "Configuração incorreta de armazenamento/serviço em nuvem, expondo dados sem autenticação.",
+      "Ataque DDoS ao roteador de borda."
+    ],
+    answer: 3
+  },
+  {
+    q: "Em uma botnet IoT, câmeras IP mal configuradas são sequestradas e usadas para gerar tráfego massivo contra serviços. Que tipo de ataque costuma ser o resultado mais comum desse uso?",
+    opts: [
+      "Controle de versão de código.",
+      "DDoS (negação de serviço distribuída).",
+      "Assinatura digital de documentos.",
+      "Criptografia de disco completa.",
+      "Engenharia social por telefone."
+    ],
+    answer: 1
+  },
+  {
+    q: "Uma organização avalia segurança com base no modelo CIA. Ela quer impedir leitura não autorizada de dados de clientes. Qual dimensão do CIA é o foco principal?",
+    opts: [
+      "Confidencialidade.",
+      "Disponibilidade.",
+      "Balanceamento.",
+      "Redundância elétrica.",
+      "Integridade."
+    ],
+    answer: 0
+  },
+  {
+    q: "Em um estudo de risco, a equipe precisa justificar investimento em segurança para a diretoria. Qual abordagem é a mais adequada?",
+    opts: [
+      "Escolher ferramentas pela marca mais famosa, sem análise.",
+      "Desconsiderar processos e focar só em hardware.",
+      "Análise de risco para qualificar/quantificar impacto e probabilidade, conectando controles ao dano evitado.",
+      "Investir apenas após um vazamento para ter certeza.",
+      "Aumentar permissões para evitar chamados de suporte."
+    ],
+    answer: 2
+  },
+  {
+    q: "Em uma revisão de acesso de terceiros, você encontra duas práticas: contas genéricas compartilhadas por vários fornecedores e permissões amplas idênticas para qualquer parceiro. Em um teste de incidente, simula-se o comprometimento de uma única conta e verifica-se que o atacante consegue consultar logística, estoque e relatórios financeiros. A diretoria quer entender qual princípio de segurança foi ignorado e por que isso amplia o impacto do comprometimento.",
+    opts: [
+      "RAID: redundância de disco reduz risco de vazamento por credencial.",
+      "Air gap: manter contas genéricas é aceitável se houver backup.",
+      "Balanceamento: distribuir tráfego entre servidores elimina abuso de permissões.",
+      "Integridade: permissões amplas impedem alterações e, portanto, reduzem danos.",
+      "Criptografia: apenas criptografar o disco resolveria o problema de permissões.",
+      "Disponibilidade: contas genéricas aumentam disponibilidade e reduzem risco.",
+      "Segurança por obscuridade: esconder nomes de usuários reduz impacto do comprometimento.",
+      "Ofuscação: mudar portas e nomes de sistemas resolve permissões amplas.",
+      "Assinatura digital: assinar e-mails impede que contas sejam comprometidas.",
+      "Privilégio mínimo: conceder apenas o necessário por função reduz o impacto quando uma conta é comprometida."
+    ],
+    answer: 9
+  },
+  {
+    q: "Uma rede varejista integra matriz, filiais, fornecedores e clientes em sistemas conectados para acelerar pedidos e logística. O time de segurança precisa explicar por que essa integração aumenta a necessidade de controles. Qual é a razão mais direta?",
+    opts: [
+      "A integração elimina riscos porque centraliza tudo em um único servidor.",
+      "A integração só aumenta risco se a empresa usar Wi‑Fi; com cabo não há ameaça.",
+      "A integração reduz a necessidade de políticas, já que o acesso é compartilhado por padrão.",
+      "Quanto mais parceiros conectados, menor a chance de incidentes, pois há mais redundância.",
+      "Mais conexões e integrações ampliam a superfície de ataque e os caminhos de acesso indireto."
+    ],
+    answer: 4
+  },
+  {
+    q: "Uma cooperativa integra seu sistema de gestão com um parceiro de cobrança. Para reduzir tempo de resposta, um desenvolvedor configurou a integração para enviar dados de clientes e valores de cobrança por uma API usando HTTP simples dentro de uma rede compartilhada do parceiro, acreditando que 'é uma rede interna e confiável'. Durante uma auditoria, você demonstra que um atacante ou usuário malicioso dentro da mesma rede poderia capturar esse tráfego com um sniffer e obter as informações sem precisar invadir o banco de dados de ninguém. Para explicar o risco com precisão, você precisa identificar em qual estado os dados estão mais expostos nesse cenário e qual controle é mais direto para reduzir o sucesso desse tipo de observação.",
+    opts: [
+      "Os dados estão em repouso; a contramedida mais direta é RAID para redundância de disco.",
+      "Os dados estão em processamento; a contramedida mais direta é criptografar o disco do servidor.",
+      "Os dados estão em repouso; a contramedida mais direta é desativar logs para evitar captura de informações.",
+      "Os dados estão em processamento; a contramedida mais direta é aumentar CPU e memória para reduzir tempo de execução.",
+      "Os dados estão em trânsito; a contramedida mais direta é criptografar o tráfego com HTTPS/TLS (ou VPN) e autenticar as requisições.",
+      "Os dados estão em trânsito; a contramedida mais direta é permitir IPs de qualquer origem para melhorar compatibilidade.",
+      "Os dados estão em trânsito; a contramedida mais direta é mudar a porta do serviço para uma porta não padrão.",
+      "Os dados estão em repouso; a contramedida mais direta é trocar o provedor de nuvem sem alterar o protocolo.",
+      "Os dados estão em trânsito; a contramedida mais direta é deixar o endpoint sem autenticação para reduzir falhas.",
+      "Os dados estão em processamento; a contramedida mais direta é controlar acesso físico ao datacenter do parceiro."
+    ],
+    answer: 4
+  },
+  {
+    q: "Uma organização quer proteger dados em trânsito contra observação em redes públicas. Qual medida é mais apropriada?",
+    opts: [
+      "Controle de versão em planilhas.",
+      "RAID 1 nos servidores.",
+      "Criptografia do tráfego, como HTTPS/TLS ou VPN.",
+      "Desfragmentação de disco.",
+      "Backup semanal em fita sem criptografia."
+    ],
+    answer: 2
+  },
+  {
+    q: "Em um exercício de gestão, a diretoria pede um plano para justificar investimento em segurança e continuidade. Os gestores querem números e critérios, mas também precisam de uma visão prática do que proteger primeiro. A equipe lista ativos como dados de clientes, sistemas de faturamento, integrações com parceiros e infraestrutura de rede, e identifica vulnerabilidades como permissões amplas, links públicos em nuvem e ausência de monitoramento. Você precisa escolher a abordagem mais adequada para transformar essa lista em decisões prioritárias de investimento.",
+    opts: [
+      "Proibir qualquer integração com terceiros e eliminar a necessidade de gestão de acesso.",
+      "Escolher controles pelo fornecedor mais conhecido do mercado, pois reputação substitui análise.",
+      "Desativar logs para reduzir custo de armazenamento e simplificar compliance.",
+      "Trocar todas as senhas a cada semana sem avaliar impacto e efetividade.",
+      "Aumentar banda e balanceamento de carga como principal critério de priorização de segurança.",
+      "Remover políticas e confiar em acordos verbais com parceiros e usuários.",
+      "Padronizar permissões amplas para reduzir custo operacional e chamados ao suporte.",
+      "Investir apenas após um incidente grave para garantir que o gasto foi necessário.",
+      "Focar somente em hardware e ignorar processos, pessoas e governança.",
+      "Análise de risco conectando ativos, ameaças, vulnerabilidades, probabilidade e impacto para priorizar controles e orçamento."
+    ],
+    answer: 9
+  },
+  {
+    q: "Um aplicativo de saúde encaminha dados para faturamento, auditoria e parceiros. Em paralelo, um programa de fidelidade usa compras para criar perfil de consumo. Que efeito esse encadeamento de compartilhamentos demonstra?",
+    opts: [
+      "Air gap de dados pessoais.",
+      "Integridade garantida por senhas longas.",
+      "Efeito cascata: a cadeia de tratamento do dado se amplia e envolve terceiros, aumentando pontos de exposição.",
+      "Redução de superfície de ataque por centralização total.",
+      "Imunidade a phishing por uso de prontuário."
+    ],
+    answer: 2
+  },
+  {
+    q: "Um atacante altera valores de pedidos e registros de estoque sem autorização, causando divergências no ERP. Pelo modelo CIA, qual objetivo foi violado?",
+    opts: [
+      "Disponibilidade.",
+      "Integridade.",
+      "Segmentação de rede.",
+      "Confidencialidade.",
+      "Autenticação por biometria."
+    ],
+    answer: 1
+  },
+  {
+    q: "Uma empresa de serviços financeiros implementou autenticação multifator para acesso remoto, mas ainda enfrenta incidentes de contas comprometidas. Em um caso recente, um atacante obteve a senha do colaborador por phishing e, em seguida, induziu o usuário a aprovar repetidas notificações de MFA no celular até que uma fosse aceita, durante um horário incomum e a partir de um país diferente. A equipe quer reduzir esse tipo de abuso sem prejudicar muito a operação. Você foi solicitado a escolher a melhoria mais eficaz, considerando que MFA existe, mas precisa ser complementada por controles adicionais.",
+    opts: [
+      "Remover o MFA para reduzir atrito e confiar apenas em senhas longas e complexas.",
+      "Autorizar automaticamente a primeira notificação de MFA para reduzir chamadas ao suporte.",
+      "Bloquear todo acesso remoto e exigir presença física, eliminando a necessidade de monitoramento.",
+      "Trocar o provedor de e-mail sem ajustar políticas de autenticação e detecção de anomalias.",
+      "Substituir o aplicativo de MFA por perguntas de segurança estáticas, pois são mais fáceis de usar.",
+      "Manter o mesmo MFA e desativar logs para evitar que o atacante saiba que foi detectado.",
+      "Exigir que o usuário troque o cabo de rede antes de autenticar, como forma de verificação adicional.",
+      "Adicionar políticas de acesso por risco, alertas e bloqueios para autenticação anômala, além de fortalecer o método de MFA.",
+      "Usar apenas criptografia de disco nos notebooks, pois isso impede abuso de credenciais.",
+      "Permitir exceção de MFA para horários noturnos, pois há menos tráfego e menos ataques."
+    ],
+    answer: 7
+  }
+];
+
+const LETTERS = 'ABCDEFGHIJ';
+
+let state = {
+  questions: [],
+  current: 0,
+  answers: {},
+  revealed: {},
+  shuffle: false
+};
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function initQuiz() {
+  state.questions = state.shuffle ? shuffleArray(QUESTIONS.map((q, i) => i)) : QUESTIONS.map((_, i) => i);
+  state.current = 0;
+  state.answers = {};
+  state.revealed = {};
+  render();
+}
+
+function getScore() {
+  let c = 0, w = 0;
+  for (const idx in state.answers) {
+    const qi = state.questions[idx];
+    if (state.answers[idx] === QUESTIONS[qi].answer) c++;
+    else w++;
+  }
+  return { correct: c, wrong: w, total: QUESTIONS.length };
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const score = getScore();
+  const allAnswered = Object.keys(state.revealed).length === QUESTIONS.length;
+
+  if (allAnswered && state.showResults) {
+    renderResults(app, score);
+    return;
+  }
+
+  const qi = state.questions[state.current];
+  const question = QUESTIONS[qi];
+  const selected = state.answers[state.current];
+  const isRevealed = state.revealed[state.current];
+
+  let html = `
+    <div class="header">
+      <h1>🔒 Conceitos Basicos da Segurança da Informação</h1>
+      <p>30 questões · Marque a alternativa correta</p>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar" style="width:${(Object.keys(state.revealed).length / QUESTIONS.length) * 100}%"></div>
+    </div>
+    <div class="progress-info">
+      <span>Questão ${state.current + 1} de ${QUESTIONS.length}</span>
+      <span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span>
+    </div>
+    <div class="controls-row">
+      <div class="score-panel">
+        <div class="score-chip correct-chip">✓ ${score.correct}</div>
+        <div class="score-chip wrong-chip">✗ ${score.wrong}</div>
+      </div>
+      <label class="toggle-label">
+        <span>Embaralhar</span>
+        <input type="checkbox" ${state.shuffle ? 'checked' : ''} onchange="toggleShuffle()">
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+    <div class="nav-dots">
+      ${state.questions.map((_, i) => {
+        let cls = 'nav-dot';
+        if (i === state.current) cls += ' active';
+        if (state.revealed[i] !== undefined) {
+          const ri = state.questions[i];
+          cls += state.answers[i] === QUESTIONS[ri].answer ? ' answered-correct' : ' answered-wrong';
+        }
+        return `<div class="${cls}" onclick="goTo(${i})">${i + 1}</div>`;
+      }).join('')}
+    </div>
+    <div class="question-card">
+      <div class="question-number">Questão ${state.current + 1} · (original #${qi + 1})</div>
+      <div class="question-text">${question.q}</div>
+    </div>`;
+
+  if (isRevealed) {
+    const isCorrect = selected === question.answer;
+    html += `<div class="feedback ${isCorrect ? 'correct-fb' : 'wrong-fb'}">
+      ${isCorrect ? '✓ Correto! Boa!' : `✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}
+    </div>`;
+  }
+
+  html += `<div class="options">`;
+  question.opts.forEach((opt, i) => {
+    let cls = 'option';
+    if (isRevealed) {
+      cls += ' disabled';
+      if (i === question.answer) cls += ' correct-answer';
+      else if (i === selected && i !== question.answer) cls += ' wrong-answer';
+    } else {
+      if (i === selected) cls += ' selected';
+    }
+    html += `<div class="${cls}" ${!isRevealed ? `onclick="selectOption(${i})"` : ''}>
+      <div class="letter">${LETTERS[i]}</div>
+      <div>${opt}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="btn-row">`;
+  if (state.current > 0) {
+    html += `<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  }
+  if (!isRevealed) {
+    html += `<button class="btn btn-primary" ${selected === undefined ? 'disabled' : ''} onclick="confirm()">Confirmar</button>`;
+  } else {
+    if (state.current < QUESTIONS.length - 1) {
+      html += `<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+    } else {
+      html += `<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+    }
+  }
+  html += `</div>`;
+
+  app.innerHTML = html;
+}
+
+function renderResults(app, score) {
+  const pct = Math.round((score.correct / score.total) * 100);
+  let msg = '';
+  if (pct === 100) msg = 'Perfeito! Você mandou muito bem! 🎉';
+  else if (pct >= 80) msg = 'Ótimo desempenho! Quase lá! 💪';
+  else if (pct >= 60) msg = 'Bom, mas dá pra melhorar. Continue estudando!';
+  else msg = 'Precisa revisar mais. Não desista! 📚';
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>🔒 Conceitos Basicos da Segurança da Informação</h1>
+      <p>Resultado Final</p>
+    </div>
+    <div class="results-card">
+      <div class="score-circle">
+        <div class="big-num">${pct}%</div>
+        <div class="label">${score.correct}/${score.total}</div>
+      </div>
+      <h2>${msg}</h2>
+      <p>${score.correct} corretas · ${score.wrong} erradas</p>
+      <div class="results-actions">
+        <button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button>
+        <button class="btn btn-primary" onclick="restart()">Refazer Quiz</button>
+      </div>
+    </div>`;
+}
+
+function selectOption(i) { state.answers[state.current] = i; render(); }
+function confirm() { state.revealed[state.current] = true; render(); }
+function next() { state.current++; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function prev() { state.current--; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function goTo(i) { state.current = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function showResults() { state.showResults = true; render(); }
+function reviewMode() { state.showResults = false; state.current = 0; render(); }
+function restart() { state.showResults = false; initQuiz(); }
+function toggleShuffle() { state.shuffle = !state.shuffle; initQuiz(); }
+
+initQuiz();
+</script>
+</body>
+</html>

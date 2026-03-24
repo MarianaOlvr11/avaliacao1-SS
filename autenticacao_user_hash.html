@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 4 -  Autenticação de usuário e hash</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-hover: #222633;
+  --border: #2a2e3d;
+  --text: #e4e6ed;
+  --text-muted: #7a7f93;
+  --accent: #a29bfe;
+  --accent-glow: rgba(162, 155, 254, 0.25);
+  --correct: #00b894;
+  --correct-bg: rgba(0, 184, 148, 0.1);
+  --correct-border: rgba(0, 184, 148, 0.4);
+  --wrong: #d63031;
+  --wrong-bg: rgba(214, 48, 49, 0.1);
+  --wrong-border: rgba(214, 48, 49, 0.4);
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+.noise { position: fixed; inset: 0; z-index: -1; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.app { max-width: 820px; margin: 0 auto; padding: 24px 20px 100px; }
+.header { text-align: center; padding: 40px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+.header h1 { font-family: 'Space Mono', monospace; font-size: 1.5rem; letter-spacing: -0.5px; margin-bottom: 6px; background: linear-gradient(135deg, #a29bfe, #dfe6e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header p { color: var(--text-muted); font-size: 0.9rem; }
+.progress-bar-container { background: var(--surface); border-radius: 100px; height: 6px; margin-bottom: 12px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, #a29bfe, #dfe6e9); border-radius: 100px; transition: width 0.4s ease; }
+.progress-info { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 28px; font-family: 'Space Mono', monospace; }
+.score-panel { display: flex; gap: 12px; margin-bottom: 28px; }
+.score-chip { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; font-family: 'Space Mono', monospace; }
+.score-chip.correct-chip { background: var(--correct-bg); border: 1px solid var(--correct-border); color: var(--correct); }
+.score-chip.wrong-chip { background: var(--wrong-bg); border: 1px solid var(--wrong-border); color: var(--wrong); }
+.question-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; animation: fadeIn 0.35s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.question-number { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+.question-text { font-size: 1.05rem; font-weight: 500; line-height: 1.7; color: var(--text); }
+.options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.option { display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.2s ease; text-align: left; font-size: 0.93rem; line-height: 1.6; color: var(--text); }
+.option:hover:not(.disabled) { background: var(--surface-hover); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow); }
+.option .letter { flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700; background: rgba(162, 155, 254, 0.1); color: var(--accent); border: 1px solid rgba(162, 155, 254, 0.2); transition: all 0.2s ease; }
+.option.selected { border-color: var(--accent); background: rgba(162, 155, 254, 0.08); }
+.option.selected .letter { background: var(--accent); color: #0f1117; }
+.option.correct-answer { border-color: var(--correct-border) !important; background: var(--correct-bg) !important; }
+.option.correct-answer .letter { background: var(--correct) !important; color: #fff !important; border-color: var(--correct) !important; }
+.option.wrong-answer { border-color: var(--wrong-border) !important; background: var(--wrong-bg) !important; }
+.option.wrong-answer .letter { background: var(--wrong) !important; color: #fff !important; border-color: var(--wrong) !important; }
+.option.disabled { cursor: default; opacity: 0.55; }
+.option.correct-answer.disabled, .option.wrong-answer.disabled { opacity: 1; }
+.btn-row { display: flex; gap: 12px; justify-content: flex-end; }
+.btn { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; padding: 12px 28px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s ease; }
+.btn-primary { background: var(--accent); color: #0f1117; box-shadow: 0 4px 16px var(--accent-glow); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-hover); }
+.results-card { text-align: center; padding: 48px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); animation: fadeIn 0.5s ease; }
+.results-card .score-circle { width: 140px; height: 140px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 24px; border: 4px solid var(--accent); box-shadow: 0 0 40px var(--accent-glow); }
+.score-circle .big-num { font-family: 'Space Mono', monospace; font-size: 2.4rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.score-circle .label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.results-card h2 { font-size: 1.4rem; margin-bottom: 8px; }
+.results-card p { color: var(--text-muted); margin-bottom: 28px; }
+.results-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.nav-dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 28px; }
+.nav-dot { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); transition: all 0.15s ease; }
+.nav-dot:hover { border-color: var(--accent); }
+.nav-dot.active { border-color: var(--accent); background: rgba(162,155,254,0.15); color: var(--accent); }
+.nav-dot.answered-correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct); }
+.nav-dot.answered-wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--wrong); }
+.controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.toggle-label { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer; }
+.toggle-label input { display: none; }
+.toggle-track { width: 38px; height: 20px; border-radius: 100px; background: var(--border); position: relative; transition: background 0.2s; }
+.toggle-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-muted); transition: all 0.2s; }
+.toggle-label input:checked + .toggle-track { background: var(--accent); }
+.toggle-label input:checked + .toggle-track::after { left: 20px; background: #0f1117; }
+.feedback { padding: 12px 18px; border-radius: 10px; font-size: 0.88rem; font-weight: 500; margin-bottom: 16px; animation: fadeIn 0.25s ease; }
+.feedback.correct-fb { background: var(--correct-bg); border: 1px solid var(--correct-border); color: var(--correct); }
+.feedback.wrong-fb { background: var(--wrong-bg); border: 1px solid var(--wrong-border); color: var(--wrong); }
+@media (max-width: 600px) { .app { padding: 16px 14px 80px; } .question-card { padding: 20px 16px; } .option { padding: 12px 14px; font-size: 0.88rem; } .header h1 { font-size: 1.2rem; } .nav-dot { width: 28px; height: 28px; font-size: 0.6rem; } }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+<script>
+const QUESTIONS = [
+  {
+    q: "Ao revisar o sistema de login, a organização resolveu implementar limitação de tentativas por conta e por origem, além de bloqueio temporário progressivo após várias falhas. O administrador rejeitou lockout permanente agressivo porque isso poderia ser explorado como negação de serviço contra usuários legítimos. Qual alternativa descreve corretamente essa estratégia?",
+    opts: [
+      "Bloquear apenas o IP de origem resolve totalmente ataques distribuídos contra a mesma conta.",
+      "Lockout permanente imediato é sempre a melhor escolha, pois nunca pode ser explorado por atacantes.",
+      "Rate limiting e lockout temporário progressivo reduzem ataques online sem facilitar tanto DoS contra contas legítimas.",
+      "Rate limiting só funciona em ataques off-line e não traz benefício para logins expostos na internet.",
+      "Limitar tentativas dispensa MFA, auditoria e qualquer política de senha forte."
+    ],
+    answer: 2
+  },
+  {
+    q: "Em uma análise pós-incidente, descobriu-se que um invasor conseguiu redefinir a senha de várias contas sem conhecer a credencial original. O ponto fraco estava no fluxo de recuperação, que exigia controles mais fracos do que o próprio login principal. Qual alternativa expressa corretamente essa lição?",
+    opts: [
+      "Recuperação bem projetada elimina a necessidade de MFA em todo o sistema.",
+      "Recuperação de conta deve ser sempre mais simples que o login para melhorar a usabilidade.",
+      "Processos de recuperação de conta precisam de controles equivalentes ao login principal.",
+      "Reset de senha é seguro por definição e não costuma ser alvo de atacantes.",
+      "Fluxos de reset podem dispensar validação porque a senha antiga já não será usada."
+    ],
+    answer: 2
+  },
+  {
+    q: "Durante uma aula prática, o professor pediu que a turma diferenciasse hash de criptografia. Muitos alunos afirmaram que ambos servem igualmente bem para armazenar senhas. O instrutor explicou que um dos processos é unidirecional e adequado à verificação; o outro é reversível e depende da proteção de uma chave. Qual alternativa está correta?",
+    opts: [
+      "Hash deve ser usado apenas em mensagens e nunca em armazenamento de credenciais.",
+      "Criptografia e hash são equivalentes quando se usa HTTPS no formulário de login.",
+      "Criptografia é melhor para senhas porque permite recuperar a senha quando o usuário esquece.",
+      "Hash é unidirecional e adequado para verificação de senhas; criptografia é reversível e serve a dados que precisam ser recuperados.",
+      "Hash e criptografia são reversíveis, mudando apenas o tamanho do resultado gerado."
+    ],
+    answer: 3
+  },
+  {
+    q: "Em um laboratório de segurança da informação, estudantes analisavam a diferença entre criptografia e funções de hash. Um aluno sugeriu que as senhas deveriam ser criptografadas para que o sistema pudesse recuperá‑las caso o usuário esquecesse a credencial. O professor explicou que existe um mecanismo mais seguro para verificação de senha que não exige armazenamento reversível. Qual alternativa descreve corretamente esse mecanismo?",
+    opts: [
+      "Proxy reverso.",
+      "Tokenização de dados.",
+      "Hash criptográfico para verificação de senha.",
+      "Monitoramento de logs.",
+      "Controle de sessão HTTP.",
+      "Balanceamento de carga.",
+      "Firewall de aplicação web.",
+      "Assinatura digital de documentos.",
+      "Cache distribuído.",
+      "Controle de acesso físico."
+    ],
+    answer: 2
+  },
+  {
+    q: "Em um comitê de segurança, discutiu-se a política de senha ideal para usuários finais. O grupo concluiu que exigir apenas complexidade artificial e trocas periódicas sem motivo costuma induzir comportamentos ruins. Em vez disso, defenderam comprimento mínimo maior, uso de passphrases, bloqueio de senhas já conhecidas e troca obrigatória apenas quando houver evidência de comprometimento. Qual alternativa resume corretamente essa visão?",
+    opts: [
+      "Política de senha substitui completamente a necessidade de MFA e de monitoramento.",
+      "Reutilização entre serviços deve ser permitida para facilitar memorização do usuário.",
+      "Senhas curtas são preferíveis porque reduzem erros de digitação e custo computacional.",
+      "Políticas eficazes priorizam comprimento, unicidade e bloqueio de senhas ruins, evitando exigências artificiais excessivas.",
+      "A melhor política é forçar trocas diárias e exigir símbolos arbitrários até o usuário desistir."
+    ],
+    answer: 3
+  },
+  {
+    q: "Durante a análise de um sistema legado, um consultor identificou que o algoritmo MD5 estava sendo usado para armazenar senhas de usuários. O especialista explicou que esse algoritmo não é mais considerado seguro para esse tipo de aplicação devido à sua velocidade e vulnerabilidades conhecidas. Qual algoritmo moderno é recomendado para esse propósito?",
+    opts: [
+      "VPN corporativa.",
+      "Backup incremental automatizado.",
+      "Monitoramento de logs.",
+      "Integridade de dados.",
+      "Controle de sessão HTTP.",
+      "Tokenização de dados.",
+      "Controle de acesso físico.",
+      "Criptografia simétrica AES.",
+      "Argon2id.",
+      "Firewall de aplicação web."
+    ],
+    answer: 8
+  },
+  {
+    q: "Uma equipe analisou um incidente em que diversos usuários tiveram suas senhas roubadas após clicar em uma página falsa muito parecida com o portal oficial da organização. O ataque não explorou uma falha criptográfica nem precisou quebrar hashes. O sucesso ocorreu porque os usuários foram induzidos a entregar voluntariamente suas credenciais. Qual alternativa identifica corretamente o vetor principal?",
+    opts: [
+      "Phishing é um ataque de engenharia social que busca capturar credenciais por engano.",
+      "Autorização baseada em papéis é o mecanismo principal desse tipo de fraude.",
+      "Salt por usuário é a estratégia utilizada para falsificar páginas de login.",
+      "Biometria comportamental é o vetor que força a vítima a informar a credencial.",
+      "Hashing lento é a técnica usada para convencer o usuário a revelar sua senha."
+    ],
+    answer: 0
+  },
+  {
+    q: "Durante o desenvolvimento de um sistema de autenticação biométrica, os engenheiros precisaram avaliar dois indicadores importantes de desempenho. Um deles mede quantas vezes o sistema aceita incorretamente um usuário não autorizado, enquanto o outro mede quantas vezes um usuário legítimo é rejeitado. Qual indicador representa a taxa de aceitação incorreta de impostores?",
+    opts: [
+      "Firewall de aplicação web.",
+      "False Acceptance Rate (FAR).",
+      "Tokenização de dados.",
+      "Criptografia de disco.",
+      "Controle de sessão HTTP.",
+      "Proxy reverso.",
+      "Backup incremental automatizado.",
+      "Monitoramento de logs.",
+      "Cache distribuído.",
+      "Integridade de dados."
+    ],
+    answer: 1
+  },
+  {
+    q: "Em um exercício de laboratório, a turma analisou um exemplo de Argon2id em que os parâmetros do algoritmo, a versão e o sal eram incorporados ao próprio resultado armazenado. O professor explicou que isso simplifica a verificação futura e reduz a necessidade de lógica adicional para gerenciar valores separados. Qual alternativa está correta?",
+    opts: [
+      "No Argon2id, o uso correto dispensa biblioteca especializada e pode ser improvisado manualmente.",
+      "No Argon2id, o sal deve ser mantido em outro sistema porque não pode aparecer no hash.",
+      "No Argon2id, o objetivo principal é compactar a senha para economizar espaço em disco.",
+      "No Argon2id, o hash resultante pode embutir parâmetros e sal, facilitando a verificação futura.",
+      "No Argon2id, o algoritmo não permite ajuste de custo nem consumo de memória."
+    ],
+    answer: 3
+  },
+  {
+    q: "Uma organização decidiu adotar autenticação multifator para proteger o acesso aos seus sistemas financeiros. O objetivo era impedir que apenas o conhecimento da senha fosse suficiente para invadir uma conta comprometida. Os administradores combinaram um fator de conhecimento com um fator de posse, exigindo um código temporário gerado em um aplicativo autenticador. Qual conceito descreve corretamente esse mecanismo?",
+    opts: [
+      "Proxy reverso.",
+      "Firewall de aplicação web.",
+      "Assinatura digital de documentos.",
+      "Autorização baseada em papéis.",
+      "Autenticação multifator (MFA).",
+      "Balanceamento de carga.",
+      "Integridade de dados.",
+      "Criptografia simétrica AES.",
+      "Criptografia de disco.",
+      "Controle de acesso físico."
+    ],
+    answer: 4
+  },
+  {
+    q: "Durante um estudo sobre biometria, os alunos analisaram dois indicadores importantes: um mede a taxa de impostores aceitos pelo sistema; o outro mede a taxa de usuários legítimos rejeitados incorretamente. Nesse contexto, qual alternativa descreve corretamente FAR e FRR?",
+    opts: [
+      "FAR e FRR indicam somente o custo financeiro de implantação do sistema.",
+      "FAR mede falsas aceitações; FRR mede falsas rejeições de usuários legítimos.",
+      "FAR mede tempo de resposta do sensor; FRR mede a força do algoritmo de hash.",
+      "FAR mede rejeições de usuários legítimos; FRR mede aceitação de impostores.",
+      "FAR e FRR servem apenas para tokens físicos, não para biometria."
+    ],
+    answer: 1
+  },
+  {
+    q: "Em uma empresa de tecnologia, dois usuários diferentes que escolheram a mesma senha acabavam gerando exatamente o mesmo valor armazenado no banco de dados. Para resolver o problema, a equipe decidiu adotar uma técnica adicional no processo de geração do hash da senha. Qual conceito representa corretamente essa técnica?",
+    opts: [
+      "Controle de acesso físico.",
+      "Monitoramento de logs.",
+      "Proxy reverso.",
+      "Controle de sessão HTTP.",
+      "Balanceamento de carga.",
+      "O uso de salt adiciona um valor aleatório único antes do hash da senha.",
+      "Firewall de aplicação web.",
+      "Cache distribuído.",
+      "Criptografia simétrica AES.",
+      "Tokenização de dados."
+    ],
+    answer: 5
+  },
+  {
+    q: "Uma equipe de segurança investigava um ataque em que credenciais vazadas de outros serviços estavam sendo usadas para tentar acesso em diferentes plataformas online. Os atacantes utilizavam listas gigantes de e‑mails e senhas obtidas em vazamentos anteriores. Esse tipo de ataque se torna especialmente perigoso quando usuários reutilizam a mesma senha em múltiplos sistemas. Qual nome descreve corretamente essa técnica?",
+    opts: [
+      "Controle de sessão HTTP.",
+      "Controle de acesso físico.",
+      "Ataque de credential stuffing.",
+      "Criptografia simétrica AES.",
+      "Backup incremental automatizado.",
+      "Balanceamento de carga.",
+      "Monitoramento de logs.",
+      "VPN corporativa.",
+      "Integridade de dados.",
+      "Autorização baseada em papéis."
+    ],
+    answer: 2
+  },
+  {
+    q: "Ao auditar uma aplicação antiga, um consultor encontrou MD5 e SHA-1 sendo usados para armazenar senhas. O plano aprovado foi migrar gradualmente para um mecanismo moderno, reprocessando a credencial quando o usuário autenticado fizesse login com sucesso. Qual alternativa expressa a decisão tecnicamente correta?",
+    opts: [
+      "A única forma segura de migração é revelar a senha antiga ao usuário e gravá-la em texto claro.",
+      "MD5 e SHA-1 são recomendados para senhas porque processam mais rápido grandes bases de usuários.",
+      "Algoritmos legados não oferecem risco quando combinados com identificadores públicos.",
+      "SHA-1 continua sendo a recomendação principal do mercado para novos sistemas de login.",
+      "MD5 e SHA-1 devem ser evitados para senhas; a migração pode ocorrer com re-hash após autenticação bem-sucedida."
+    ],
+    answer: 4
+  },
+  {
+    q: "Em uma empresa, os nomes de usuário dos funcionários aparecem em crachás, e-mails e listas internas. Mesmo assim, o administrador reforçou que o conhecimento desses identificadores não deve ser tratado como quebra de segurança, porque o acesso só pode ser concedido após a validação de uma prova secreta. Qual alternativa está correta nesse contexto?",
+    opts: [
+      "O identificador substitui o segundo fator em ambientes com controle de acesso.",
+      "Se o ID for conhecido, o sistema deve conceder acesso limitado automaticamente.",
+      "O identificador deve ser protegido como se fosse equivalente à senha do usuário.",
+      "O nome de usuário só pode ser armazenado se estiver criptografado com hash lento.",
+      "O identificador pode ser público; o segredo real é a credencial usada na verificação."
+    ],
+    answer: 4
+  },
+  {
+    q: "Durante uma revisão de código, um desenvolvedor sugeriu usar bcrypt em um serviço legado por causa da ampla compatibilidade do ecossistema. O arquiteto aprovou a ideia, mas fez dois alertas: o fator de custo não deveria ficar baixo demais, e senhas muito longas exigiam atenção por causa de uma limitação específica do algoritmo. Qual alternativa representa corretamente esses pontos?",
+    opts: [
+      "bcrypt deve sempre usar custo 1 para evitar sobrecarga e aceita qualquer tamanho sem restrições.",
+      "bcrypt é compatível e forte, mas deve usar custo adequado e possui limitação prática para entradas acima de 72 bytes.",
+      "bcrypt é um algoritmo de criptografia reversível voltado à recuperação de senhas esquecidas.",
+      "bcrypt substitui a necessidade de sal porque trabalha apenas com identificadores secretos.",
+      "bcrypt é obsoleto e nunca deve ser usado, mesmo em ambientes legados com suporte consolidado."
+    ],
+    answer: 1
+  },
+  {
+    q: "Ao revisar um banco de credenciais, um especialista encontrou senhas curtas, previsíveis e reutilizadas em vários serviços. Ele alertou que esse cenário favorece ataques de adivinhação, força bruta e credential stuffing. Qual alternativa identifica corretamente uma fragilidade típica desse cenário?",
+    opts: [
+      "Senhas curtas são aceitáveis desde que o identificador do usuário seja secreto.",
+      "Reutilização entre serviços fortalece a auditoria porque simplifica o controle do usuário.",
+      "Reutilização entre serviços amplia o impacto de um único vazamento de credenciais.",
+      "Credential stuffing só funciona quando a organização usa biometria em vez de senha.",
+      "Compartilhar senhas melhora a rastreabilidade porque vários usuários confirmam o mesmo acesso."
+    ],
+    answer: 2
+  },
+  {
+    q: "A turma estudou um cenário em que o atacante já possuía hashes obtidos de um vazamento e passava a testá-los em sua própria infraestrutura, sem interagir com o sistema de login da vítima. O professor mostrou uma ferramenta altamente otimizada para GPU. Qual alternativa identifica corretamente a ferramenta descrita?",
+    opts: [
+      "Hashcat é usado para recuperar senhas a partir de hashes, explorando grande desempenho de GPU.",
+      "Hydra é a ferramenta voltada prioritariamente a quebrar hashes off-line com CUDA/OpenCL.",
+      "Hashcat é um protocolo de rede usado para autenticação multifator com tokens.",
+      "bcrypt é um sistema operacional voltado a auditoria e forense digital.",
+      "Wireshark é a principal ferramenta para re-hash automático com Argon2id no servidor."
+    ],
+    answer: 0
+  },
+  {
+    q: "Em um sistema bancário online, o time de segurança decidiu implementar limitação de tentativas de login para reduzir ataques automatizados. Após várias falhas consecutivas, o sistema passa a aumentar o intervalo entre novas tentativas ou bloquear temporariamente o acesso. Qual estratégia de segurança está sendo aplicada nesse caso? (Discussão técnica #27)",
+    opts: [
+      "Criptografia simétrica AES.",
+      "Rate limiting em tentativas de login.",
+      "Controle de acesso físico.",
+      "Balanceamento de carga.",
+      "Backup incremental automatizado.",
+      "Cache distribuído.",
+      "Assinatura digital de documentos.",
+      "Tokenização de dados.",
+      "Autorização baseada em papéis.",
+      "Controle de sessão HTTP."
+    ],
+    answer: 1
+  },
+  {
+    q: "Uma equipe de pentest recebeu autorização formal para avaliar a robustez de autenticação de um servidor exposto na rede. Os analistas escolheram uma ferramenta capaz de automatizar tentativas de login online contra serviços como SSH, FTP, HTTP e outros protocolos. Qual ferramenta foi corretamente caracterizada nessa descrição?",
+    opts: [
+      "Hashcat realiza exclusivamente interceptação de tráfego em redes Wi-Fi públicas.",
+      "Argon2id é uma ferramenta de pentest voltada à quebra online de logins SSH.",
+      "Kali Linux é um protocolo de autenticação usado para validar identidades em aplicações web.",
+      "Hydra automatiza ataques online de força bruta e dicionário contra serviços de autenticação em rede.",
+      "Hydra é um algoritmo de hash lento criado para armazenar senhas com sal."
+    ],
+    answer: 3
+  },
+  {
+    q: "Em um cadastro de usuários, o sistema moderno passou a gerar um valor aleatório exclusivo para cada credencial, armazenando esse valor junto ao resultado derivado da senha. O arquiteto explicou que esse valor não precisa ser secreto; sua utilidade está em tornar diferentes os resultados produzidos mesmo quando dois usuários escolhem a mesma senha. Qual alternativa descreve corretamente a função do salt?",
+    opts: [
+      "O salt é um valor único por credencial que impede que senhas idênticas produzam hashes idênticos.",
+      "O salt substitui a necessidade de função de hash lenta e elimina ataques off-line por completo.",
+      "O salt serve apenas para aumentar a velocidade da autenticação em sistemas com muitos usuários.",
+      "O salt é uma chave secreta compartilhada entre todos os usuários para criptografar senhas.",
+      "O salt deve ser ocultado do banco de dados porque sua eficácia depende de sigilo absoluto."
+    ],
+    answer: 0
+  },
+  {
+    q: "Durante uma aula prática, os alunos acompanharam o fluxo de um ataque de dicionário off-line. O agressor havia obtido o banco de hashes e passou a calcular localmente o resultado de senhas comuns. Qual alternativa descreve corretamente esse processo?",
+    opts: [
+      "No ataque off-line, sal único por usuário facilita o uso de rainbow tables compartilhadas.",
+      "No ataque off-line, o agressor precisa enviar cada tentativa ao portal de login para receber resposta.",
+      "No ataque off-line, o bloqueio por IP é a principal barreira que impede milhões de testes por segundo.",
+      "No ataque off-line, o atacante testa candidatas localmente contra hashes vazados, sem interagir com o login do sistema.",
+      "No ataque off-line, o sistema sempre detecta imediatamente qualquer dicionário usado pelo invasor."
+    ],
+    answer: 3
+  },
+  {
+    q: "Uma empresa passou a monitorar ritmo de digitação e padrão de uso do mouse para identificar comportamentos anômalos em sessões autenticadas. Qual alternativa classifica corretamente esse tipo de fator?",
+    opts: [
+      "Trata-se de um fator de conhecimento, como senha e PIN.",
+      "Trata-se de biometria comportamental, um exemplo de algo que você faz.",
+      "Trata-se de criptografia de sessão aplicada ao tráfego HTTPS.",
+      "Trata-se de um fator de posse, equivalente a um token OTP.",
+      "Trata-se de biometria fisiológica, um exemplo de algo que você é."
+    ],
+    answer: 1
+  },
+  {
+    q: "Ao discutir por que senhas fracas costumam ser quebradas rapidamente, o professor comparou ataques de dicionário e força bruta. No primeiro, o atacante aposta em listas de combinações prováveis. No segundo, percorre sistematicamente todo o espaço de busca possível. Qual alternativa está correta?",
+    opts: [
+      "Força bruta só existe em ataques online e nunca pode ser aplicada off-line.",
+      "Força bruta depende exclusivamente de páginas falsas de login para funcionar.",
+      "Ataque de dicionário sempre é mais lento que força bruta porque não usa listas prontas.",
+      "Dicionário e força bruta são idênticos; muda apenas o idioma da palavra testada.",
+      "Ataque de dicionário usa senhas prováveis; força bruta percorre sistematicamente todas as combinações possíveis."
+    ],
+    answer: 4
+  },
+  {
+    q: "Em uma central de suporte, um funcionário perdeu o celular usado como segundo fator de autenticação. O time de segurança precisou agir rapidamente para impedir uso indevido do dispositivo. Qual resposta está correta?",
+    opts: [
+      "Ao perder o dispositivo, o usuário deve continuar usando o mesmo token indefinidamente.",
+      "A perda do token não afeta a segurança porque o fator posse não pode ser roubado.",
+      "Tokens de software não precisam de revogação porque sempre são impossíveis de copiar.",
+      "Tokens perdidos devem ser revogados imediatamente e substituídos por meio de processo controlado.",
+      "O fator posse elimina a necessidade de qualquer política de recuperação de conta."
+    ],
+    answer: 3
+  },
+  {
+    q: "Durante a revisão de arquitetura, a equipe decidiu isolar o repositório de credenciais em área mais protegida, aplicar menor privilégio às contas de serviço e monitorar consultas incomuns ou exportações em massa. Qual alternativa corresponde corretamente a essa prática?",
+    opts: [
+      "Se o sistema usa hash, o repositório pode ser exposto livremente sem risco relevante.",
+      "Separar hashes dos demais dados enfraquece a segurança porque aumenta a complexidade operacional.",
+      "Repositórios de credenciais não precisam de hardening porque salt resolve todos os problemas.",
+      "A conta de serviço da aplicação deve ter acesso total ao banco para simplificar manutenção.",
+      "O repositório de credenciais deve ter proteção reforçada, permissões mínimas e monitoramento específico."
+    ],
+    answer: 4
+  },
+  {
+    q: "Em um sistema bancário online, o time de segurança decidiu implementar limitação de tentativas de login para reduzir ataques automatizados. Qual estratégia de segurança está sendo aplicada nesse caso? (Discussão técnica #7)",
+    opts: [
+      "Tokenização de dados.",
+      "Autorização baseada em papéis.",
+      "Proxy reverso.",
+      "VPN corporativa.",
+      "Rate limiting em tentativas de login.",
+      "Monitoramento de logs.",
+      "Firewall de aplicação web.",
+      "Controle de sessão HTTP.",
+      "Controle de acesso físico.",
+      "Assinatura digital de documentos."
+    ],
+    answer: 4
+  },
+  {
+    q: "Durante a análise de um sistema legado, um consultor identificou que o algoritmo MD5 estava sendo usado para armazenar senhas. Qual algoritmo moderno é recomendado para esse propósito? (Discussão técnica #18)",
+    opts: [
+      "Proxy reverso.",
+      "Controle de sessão HTTP.",
+      "Autorização baseada em papéis.",
+      "Argon2id.",
+      "Criptografia simétrica AES.",
+      "Integridade de dados.",
+      "Firewall de aplicação web.",
+      "Assinatura digital de documentos.",
+      "Criptografia de disco.",
+      "VPN corporativa."
+    ],
+    answer: 3
+  },
+  {
+    q: "Em um incidente de vazamento, um atacante obteve acesso ao banco de hashes de senha. A equipe precisou explicar por que o atacante ainda não tinha imediatamente todas as senhas originais, mas também por que o risco continuava elevado. Qual alternativa expressa corretamente essa ideia?",
+    opts: [
+      "Hashing serve apenas para cifrar mensagens em trânsito entre navegador e servidor.",
+      "Hashing substitui a necessidade de controlar acesso ao repositório de credenciais.",
+      "Hashing permite verificar a senha por comparação sem armazenar a senha original de forma recuperável.",
+      "Hashing permite reconstruir a senha original sempre que o sistema precisar conferir o login.",
+      "Hashing torna impossível qualquer ataque off-line, mesmo com algoritmos fracos e sem sal."
+    ],
+    answer: 2
+  },
+  {
+    q: "Durante uma auditoria em uma universidade pública, o time de segurança percebeu que muitos desenvolvedores confundiam etapas do processo de acesso ao sistema acadêmico. Em um dos módulos, o estudante digitava apenas seu e‑mail institucional e imediatamente recebia acesso parcial ao portal. Qual conceito descreve corretamente o mecanismo que comprova a identidade do usuário antes de permitir o acesso?",
+    opts: [
+      "Autorização baseada em papéis.",
+      "Balanceamento de carga.",
+      "Integridade de dados.",
+      "Firewall de aplicação web.",
+      "Controle de acesso físico.",
+      "VPN corporativa.",
+      "Proxy reverso.",
+      "Cache distribuído.",
+      "Autenticação é o processo que verifica se o usuário é realmente quem afirma ser.",
+      "Criptografia simétrica AES."
+    ],
+    answer: 8
+  }
+];
+
+const LETTERS = 'ABCDEFGHIJ';
+let state = { questions: [], current: 0, answers: {}, revealed: {}, shuffle: false };
+
+function shuffleArray(arr) { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function initQuiz() { state.questions = state.shuffle ? shuffleArray(QUESTIONS.map((q, i) => i)) : QUESTIONS.map((_, i) => i); state.current = 0; state.answers = {}; state.revealed = {}; render(); }
+function getScore() { let c = 0, w = 0; for (const idx in state.answers) { const qi = state.questions[idx]; if (state.answers[idx] === QUESTIONS[qi].answer) c++; else w++; } return { correct: c, wrong: w, total: QUESTIONS.length }; }
+
+function render() {
+  const app = document.getElementById('app');
+  const score = getScore();
+  if (Object.keys(state.revealed).length === QUESTIONS.length && state.showResults) { renderResults(app, score); return; }
+  const qi = state.questions[state.current];
+  const question = QUESTIONS[qi];
+  const selected = state.answers[state.current];
+  const isRevealed = state.revealed[state.current];
+
+  let html = `
+    <div class="header"><h1>🔑  Autenticação de usuário e hash</h1><p>30 questões · Autenticação, hashing e credenciais</p></div>
+    <div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length / QUESTIONS.length) * 100}%"></div></div>
+    <div class="progress-info"><span>Questão ${state.current + 1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+    <div class="controls-row">
+      <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+      <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle ? 'checked' : ''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
+    </div>
+    <div class="nav-dots">${state.questions.map((_, i) => {
+      let cls = 'nav-dot'; if (i === state.current) cls += ' active';
+      if (state.revealed[i] !== undefined) { const ri = state.questions[i]; cls += state.answers[i] === QUESTIONS[ri].answer ? ' answered-correct' : ' answered-wrong'; }
+      return `<div class="${cls}" onclick="goTo(${i})">${i + 1}</div>`;
+    }).join('')}</div>
+    <div class="question-card"><div class="question-number">Questão ${state.current + 1} · (original #${qi + 1})</div><div class="question-text">${question.q}</div></div>`;
+
+  if (isRevealed) { const ok = selected === question.answer; html += `<div class="feedback ${ok ? 'correct-fb' : 'wrong-fb'}">${ok ? '✓ Correto! Boa!' : `✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`; }
+
+  html += `<div class="options">`;
+  question.opts.forEach((opt, i) => {
+    let cls = 'option';
+    if (isRevealed) { cls += ' disabled'; if (i === question.answer) cls += ' correct-answer'; else if (i === selected && i !== question.answer) cls += ' wrong-answer'; }
+    else { if (i === selected) cls += ' selected'; }
+    html += `<div class="${cls}" ${!isRevealed ? `onclick="selectOption(${i})"` : ''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html += `</div><div class="btn-row">`;
+  if (state.current > 0) html += `<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if (!isRevealed) html += `<button class="btn btn-primary" ${selected === undefined ? 'disabled' : ''} onclick="confirm()">Confirmar</button>`;
+  else if (state.current < QUESTIONS.length - 1) html += `<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html += `<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html += `</div>`; app.innerHTML = html;
+}
+
+function renderResults(app, score) {
+  const pct = Math.round((score.correct / score.total) * 100);
+  let msg = pct === 100 ? 'Perfeito! 🎉' : pct >= 80 ? 'Ótimo desempenho! 💪' : pct >= 60 ? 'Bom, mas dá pra melhorar!' : 'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML = `
+    <div class="header"><h1>🔑  Autenticação de usuário e hash</h1><p>Resultado Final</p></div>
+    <div class="results-card">
+      <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+      <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+      <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+    </div>`;
+}
+
+function selectOption(i) { state.answers[state.current] = i; render(); }
+function confirm() { state.revealed[state.current] = true; render(); }
+function next() { state.current++; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function prev() { state.current--; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function goTo(i) { state.current = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function showResults() { state.showResults = true; render(); }
+function reviewMode() { state.showResults = false; state.current = 0; render(); }
+function restart() { state.showResults = false; initQuiz(); }
+function toggleShuffle() { state.shuffle = !state.shuffle; initQuiz(); }
+initQuiz();
+</script>
+</body>
+</html>

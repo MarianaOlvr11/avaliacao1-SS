@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 3 - Tipos de Ataque</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-hover: #222633;
+  --border: #2a2e3d;
+  --text: #e4e6ed;
+  --text-muted: #7a7f93;
+  --accent: #00cec9;
+  --accent-glow: rgba(0, 206, 201, 0.25);
+  --correct: #00b894;
+  --correct-bg: rgba(0, 184, 148, 0.1);
+  --correct-border: rgba(0, 184, 148, 0.4);
+  --wrong: #d63031;
+  --wrong-bg: rgba(214, 48, 49, 0.1);
+  --wrong-border: rgba(214, 48, 49, 0.4);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.noise {
+  position: fixed; inset: 0; z-index: -1; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.app { max-width: 820px; margin: 0 auto; padding: 24px 20px 100px; }
+
+.header { text-align: center; padding: 40px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+.header h1 {
+  font-family: 'Space Mono', monospace; font-size: 1.5rem; letter-spacing: -0.5px; margin-bottom: 6px;
+  background: linear-gradient(135deg, #00cec9, #81ecec); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.header p { color: var(--text-muted); font-size: 0.9rem; }
+
+.progress-bar-container { background: var(--surface); border-radius: 100px; height: 6px; margin-bottom: 12px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, #00cec9, #81ecec); border-radius: 100px; transition: width 0.4s ease; }
+.progress-info { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 28px; font-family: 'Space Mono', monospace; }
+
+.score-panel { display: flex; gap: 12px; margin-bottom: 28px; }
+.score-chip { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; font-family: 'Space Mono', monospace; }
+.score-chip.correct-chip { background: var(--correct-bg); border: 1px solid var(--correct-border); color: var(--correct); }
+.score-chip.wrong-chip { background: var(--wrong-bg); border: 1px solid var(--wrong-border); color: var(--wrong); }
+
+.question-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; animation: fadeIn 0.35s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.question-number { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; }
+.question-text { font-size: 1.05rem; font-weight: 500; line-height: 1.7; color: var(--text); }
+
+.options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.option {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.2s ease;
+  text-align: left; font-size: 0.93rem; line-height: 1.6; color: var(--text);
+}
+.option:hover:not(.disabled) { background: var(--surface-hover); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow); }
+.option .letter {
+  flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: 700;
+  background: rgba(0, 206, 201, 0.1); color: var(--accent); border: 1px solid rgba(0, 206, 201, 0.2); transition: all 0.2s ease;
+}
+.option.selected { border-color: var(--accent); background: rgba(0, 206, 201, 0.08); }
+.option.selected .letter { background: var(--accent); color: #0f1117; }
+.option.correct-answer { border-color: var(--correct-border) !important; background: var(--correct-bg) !important; }
+.option.correct-answer .letter { background: var(--correct) !important; color: #fff !important; border-color: var(--correct) !important; }
+.option.wrong-answer { border-color: var(--wrong-border) !important; background: var(--wrong-bg) !important; }
+.option.wrong-answer .letter { background: var(--wrong) !important; color: #fff !important; border-color: var(--wrong) !important; }
+.option.disabled { cursor: default; opacity: 0.55; }
+.option.correct-answer.disabled, .option.wrong-answer.disabled { opacity: 1; }
+
+.btn-row { display: flex; gap: 12px; justify-content: flex-end; }
+.btn { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; padding: 12px 28px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s ease; }
+.btn-primary { background: var(--accent); color: #0f1117; box-shadow: 0 4px 16px var(--accent-glow); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--accent-glow); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface-hover); }
+
+.results-card { text-align: center; padding: 48px 28px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); animation: fadeIn 0.5s ease; }
+.results-card .score-circle { width: 140px; height: 140px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 24px; border: 4px solid var(--accent); box-shadow: 0 0 40px var(--accent-glow); }
+.score-circle .big-num { font-family: 'Space Mono', monospace; font-size: 2.4rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.score-circle .label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.results-card h2 { font-size: 1.4rem; margin-bottom: 8px; }
+.results-card p { color: var(--text-muted); margin-bottom: 28px; }
+.results-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.nav-dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 28px; }
+.nav-dot {
+  width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: 700; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); transition: all 0.15s ease;
+}
+.nav-dot:hover { border-color: var(--accent); }
+.nav-dot.active { border-color: var(--accent); background: rgba(0,206,201,0.15); color: var(--accent); }
+.nav-dot.answered-correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct); }
+.nav-dot.answered-wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--wrong); }
+
+.controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.toggle-label { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-muted); cursor: pointer; }
+.toggle-label input { display: none; }
+.toggle-track { width: 38px; height: 20px; border-radius: 100px; background: var(--border); position: relative; transition: background 0.2s; }
+.toggle-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-muted); transition: all 0.2s; }
+.toggle-label input:checked + .toggle-track { background: var(--accent); }
+.toggle-label input:checked + .toggle-track::after { left: 20px; background: #0f1117; }
+
+.feedback { padding: 12px 18px; border-radius: 10px; font-size: 0.88rem; font-weight: 500; margin-bottom: 16px; animation: fadeIn 0.25s ease; }
+.feedback.correct-fb { background: var(--correct-bg); border: 1px solid var(--correct-border); color: var(--correct); }
+.feedback.wrong-fb { background: var(--wrong-bg); border: 1px solid var(--wrong-border); color: var(--wrong); }
+
+@media (max-width: 600px) {
+  .app { padding: 16px 14px 80px; }
+  .question-card { padding: 20px 16px; }
+  .option { padding: 12px 14px; font-size: 0.88rem; }
+  .header h1 { font-size: 1.2rem; }
+  .nav-dot { width: 28px; height: 28px; font-size: 0.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "Durante um incidente de segurança, o atacante bloqueia o acesso a um sistema crítico, impedindo que usuários autorizados utilizem o serviço.",
+    opts: ["Interrupção","Balanceamento","Interceptação","Compressão","Fragmentação"],
+    answer: 0
+  },
+  {
+    q: "Uma empresa sofre um ataque em que arquivos são criptografados por malware e o atacante exige pagamento para liberar o acesso aos dados.",
+    opts: ["Balanceamento de carga","Hashing","Proxy reverso","Firewall","Ransomware"],
+    answer: 4
+  },
+  {
+    q: "Durante um ataque de engenharia social, um criminoso envia e‑mails falsos imitando o diretor de TI para convencer o suporte técnico a redefinir senhas.",
+    opts: ["Segmentação de rede","Phishing com identidade forjada","Compressão de arquivos","Balanceamento de tráfego","Criptografia de dados"],
+    answer: 1
+  },
+  {
+    q: "Durante uma análise de segurança ofensiva autorizada, a equipe vermelha notou que um funcionário havia reutilizado o mesmo token de autenticação em ambiente não confiável. Meses depois, um invasor reproduziu a sequência capturada para obter acesso sem precisar conhecer a senha original do usuário. O servidor aceitou a informação reapresentada porque a lógica de validação não exigia proteção suficiente contra repetição indevida daquela credencial transitória. Qual alternativa nomeia corretamente a técnica empregada pelo agressor?",
+    opts: [
+      "Ataque de replay com reutilização de credencial capturada",
+      "Criptografia de chave pública do token em repouso",
+      "Ataque DDoS com amplificação por UDP",
+      "Processo legítimo de refresh de sessão no SSO",
+      "Monitoramento passivo sem tentativa de autenticação",
+      "Filtro web com bloqueio de categorias",
+      "Segmentação de usuários por grupo de políticas",
+      "Phishing por engenharia social em call center",
+      "Backup incremental da base de autenticação",
+      "Hardening do servidor de aplicação executado corretamente"
+    ],
+    answer: 0
+  },
+  {
+    q: "Em um ambiente corporativo, um invasor tenta adivinhar senhas testando diversas combinações possíveis até encontrar a correta.",
+    opts: ["Balanceamento de carga","Fragmentação de rede","Criptografia simétrica","Compressão de dados","Força bruta"],
+    answer: 4
+  },
+  {
+    q: "Em uma rede corporativa, um invasor captura tokens de sessão e cookies enquanto os usuários acessam aplicações web sem criptografia.",
+    opts: ["Compressão de pacotes","Segmentação de rede","Fragmentação de IP","Balanceamento de carga","Interceptação de sessão"],
+    answer: 4
+  },
+  {
+    q: "Na véspera da Black Friday, a equipe de segurança de um grande varejista percebeu aumento súbito no número de conexões simultâneas ao portal de vendas. Os dashboards mostravam consumo anormal de banda, CPU elevada nos balanceadores e esgotamento das tabelas de conexão nos servidores de borda. Mesmo com a infraestrutura física intacta, clientes legítimos passaram a receber erro de timeout e o checkout ficou indisponível por vários minutos. Considerando o cenário, qual alternativa identifica corretamente o ataque predominante?",
+    opts: [
+      "Ataque DDoS voltado à indisponibilidade do serviço",
+      "Assinatura digital aplicada incorretamente ao certificado",
+      "Política de backup completo em horário comercial",
+      "Atualização normal de firmware dos roteadores",
+      "Técnica de hash para validação de integridade",
+      "Compactação de objetos estáticos no servidor web",
+      "Balanceamento geográfico de conteúdo em CDN",
+      "Processo legítimo de replicação entre data centers",
+      "Segmentação de VLAN para isolar tráfego interno",
+      "Ataque passivo de sniffing sem impacto operacional"
+    ],
+    answer: 0
+  },
+  {
+    q: "Um administrador percebe que mensagens enviadas entre dois sistemas chegaram fora de ordem e com conteúdo diferente do original após passarem por um intermediário malicioso.",
+    opts: ["Ataque de redundância","Ataque de fragmentação","Ataque de roteamento estático","Ataque de modificação","Ataque de compressão"],
+    answer: 3
+  },
+  {
+    q: "Após conter um incidente severo, uma organização iniciou a restauração de serviços a partir de cópias consideradas íntegras e previamente validadas. Os analistas insistiram que a retomada não poderia ocorrer sem varredura do ambiente, conferência dos backups e investigação do vetor inicial do comprometimento. Qual alternativa identifica corretamente a etapa enfatizada no cenário?",
+    opts: [
+      "Interceptação passiva em rede sem fio aberta",
+      "Hashing de arquivos sem propósito de restauração",
+      "Escalonamento de privilégios no host comprometido",
+      "Phishing inicial para obtenção de credenciais",
+      "Compressão de imagens em storage de objetos",
+      "Balanceamento L4 para distribuição de sessões",
+      "Ataque de replay contra tokens de autenticação",
+      "Recuperação pós-incidente com validação do retorno à operação",
+      "Segmentação de rede por departamentos acadêmicos",
+      "Criação de botnet para saturar o serviço externo"
+    ],
+    answer: 7
+  },
+  {
+    q: "Um ambiente de nuvem híbrida passou por revisão após incidentes recorrentes ligados à exposição indevida de máquinas virtuais e dados sensíveis. Recursos da organização começaram a ser utilizados para hospedar conteúdo malicioso e originar novas ofensivas contra terceiros. Qual alternativa nomeia corretamente esse resultado do comprometimento?",
+    opts: [
+      "Segmentação de custos por centro de despesa",
+      "Interceptação de e-mails em texto claro na borda",
+      "Restauração de VM a partir de snapshot limpo",
+      "Fabricação isolada de mensagem de phishing",
+      "Balanceamento de instâncias por autoscaling",
+      "Criptografia de objetos em bucket com KMS",
+      "Usurpação de recursos do sistema para fins do atacante",
+      "Política correta de least privilege em nuvem",
+      "Controle de versão do pipeline de CI/CD",
+      "Hashing de imagens de container para registro"
+    ],
+    answer: 6
+  },
+  {
+    q: "Em uma análise de arquitetura de segurança, um especialista afirma que apenas usuários autorizados devem acessar determinadas informações sensíveis.",
+    opts: ["Confidencialidade","Fragmentação","Escalabilidade","Redundância","Disponibilidade"],
+    answer: 0
+  },
+  {
+    q: "Em um centro de operações de segurança, analistas utilizam um sistema que centraliza logs e correlaciona eventos para detectar comportamentos suspeitos.",
+    opts: ["Firewall NAT","Switch L2","Proxy HTTP","Balanceador DNS","SIEM"],
+    answer: 4
+  },
+  {
+    q: "Uma indústria enviou eletronicamente uma ordem de pagamento para um fornecedor estratégico. Quando o financeiro do destino recebeu a solicitação, a conta beneficiária havia sido alterada, embora o formato geral da mensagem continuasse válido. Os analistas concluíram que alguém teve acesso ao fluxo em trânsito e promoveu uma alteração sutil antes da entrega final. Qual conceito descreve melhor o ataque realizado?",
+    opts: [
+      "Balanceamento de carga entre aplicações de pagamento",
+      "Modificação de dados com comprometimento da integridade",
+      "Criptografia simétrica de arquivos em repouso",
+      "Fragmentação IP em enlaces congestionados",
+      "Política de retenção de logs financeiros",
+      "Fabricação pura de transação inexistente desde a origem",
+      "Processo de espelhamento de portas para auditoria",
+      "Backup incremental do banco de dados corporativo",
+      "Interceptação passiva sem alteração do conteúdo",
+      "Migração normal de conta entre bancos homologados"
+    ],
+    answer: 1
+  },
+  {
+    q: "Durante um ataque em larga escala, milhares de dispositivos comprometidos passam a enviar requisições simultâneas para um único servidor, causando indisponibilidade do serviço.",
+    opts: ["Sniffing de rede","Ataque DDoS","Criptografia TLS","Segmentação VLAN","Hash SHA"],
+    answer: 1
+  },
+  {
+    q: "Durante um exercício de resposta a incidentes, os alunos receberam um conjunto de logs de endpoints, firewalls, proxies e sistemas de autenticação. Quando correlacionados surgiam padrões claros de login fora do horário, picos de transferência e conexões incomuns. A ferramenta usada pela equipe consolidava registros de múltiplas fontes e ajudava a criar uma visão única do comportamento do ambiente. Qual alternativa identifica corretamente a tecnologia central do cenário?",
+    opts: [
+      "SIEM para centralização e correlação de eventos de segurança",
+      "Sistema de refrigeração redundante do datacenter",
+      "Algoritmo AES para cifrar bases de dados",
+      "Switch de acesso com portas não gerenciáveis",
+      "Controlador wireless para roaming corporativo",
+      "Sistema de backups offline de fita magnética",
+      "Scanner de código fonte para revisão estática",
+      "Protocolo HTTP para publicação de intranet",
+      "Firewall pessoal em estação de trabalho isolada",
+      "Ferramenta de compactação de logs antigos"
+    ],
+    answer: 0
+  },
+  {
+    q: "Uma equipe de segurança detecta que um invasor externo utiliza ferramentas automatizadas para explorar vulnerabilidades expostas em serviços de rede.",
+    opts: ["Fragmentação de IP","Ataque de outsider","Balanceamento de carga","Compressão de tráfego","Ataque interno autorizado"],
+    answer: 1
+  },
+  {
+    q: "Durante o planejamento de segurança de uma organização, a equipe discute três conceitos essenciais para analisar riscos digitais: ameaça, vulnerabilidade e ataque. Eles concluem que um ataque ocorre quando alguém explora uma fraqueza existente no sistema.",
+    opts: ["Atualização automática de software","Uso de criptografia de dados","Exploração de vulnerabilidade por um agente","Segmentação de VLAN","Configuração de firewall padrão"],
+    answer: 2
+  },
+  {
+    q: "Durante uma operação de segurança, a equipe recebeu evidências de que o invasor alterara registros para ocultar ações executadas com privilégio elevado. Os eventos mais sensíveis desapareceram de alguns arquivos, enquanto entradas irrelevantes eram mantidas para preservar aparência de normalidade operacional. Qual alternativa descreve corretamente a ação ofensiva central?",
+    opts: [
+      "Criptografia de backup para armazenamento externo",
+      "Corrupção ou adulteração de logs para ocultar rastros",
+      "Captura passiva de tráfego sem qualquer alteração",
+      "Compactação de eventos antigos no arquivamento",
+      "Replica assíncrona entre coletores de logs",
+      "Atualização legítima de política de retenção",
+      "Processo de carimbo do tempo em documentos",
+      "Segmentação lógica de usuários por grupos",
+      "Firewall de borda permitindo tráfego de saída",
+      "Rebalanceamento de shards em banco distribuído"
+    ],
+    answer: 1
+  },
+  {
+    q: "Após um incidente, a equipe de segurança restaura sistemas a partir de backups confiáveis e analisa o ocorrido para evitar novos ataques.",
+    opts: ["Compressão de tráfego","Segmentação VLAN","Fragmentação de rede","Balanceamento de carga","Recuperação e resposta a incidentes"],
+    answer: 4
+  },
+  {
+    q: "Em um laboratório de autenticação, os alunos acompanharam um script que tentava inúmeras combinações diferentes contra uma mesma conta até encontrar a senha correta. Qual alternativa identifica corretamente o ataque demonstrado?",
+    opts: [
+      "Ataque DDoS por amplificação memcached",
+      "Ransomware em compartilhamento de rede",
+      "Assinatura digital de pacotes IP",
+      "Hashing seguro com bcrypt e sal",
+      "Interceptação de sessão com cookie roubado",
+      "Força bruta contra uma conta ou credencial específica",
+      "Pulverização de senha em contas múltiplas",
+      "Segmentação de zona em firewall ZPF",
+      "Failover automático do serviço autenticador",
+      "Compactação de tráfego para WAN"
+    ],
+    answer: 5
+  },
+  {
+    q: "Uma equipe de segurança decide reduzir serviços desnecessários expostos em servidores para diminuir possíveis pontos de ataque.",
+    opts: ["Compressão de pacotes","Balanceamento de carga","Ampliação de tráfego","Redução da superfície de ataque","Fragmentação de rede"],
+    answer: 3
+  },
+  {
+    q: "Durante uma investigação, analistas descobrem que malware instalou um canal secreto para permitir acesso remoto persistente ao sistema comprometido.",
+    opts: ["Balanceamento","Backdoor","Fragmentação","Hash criptográfico","Compressão"],
+    answer: 1
+  },
+  {
+    q: "Um pesquisador observou que um site corporativo aceitava dados de entrada sem validação adequada em um campo usado por clientes para consulta de pedidos. Verificou-se que era possível alterar a lógica esperada da aplicação e obter respostas não previstas pelos desenvolvedores. Qual alternativa representa corretamente essa categoria de ataque?",
+    opts: [
+      "Botnet distribuída para saturação de banda",
+      "Segmentação física da rede de produção",
+      "Interceptação passiva com porta espelhada",
+      "Injeção de código ou comandos por falha de validação de entrada",
+      "Roteamento estático correto entre sub-redes",
+      "Compressão de consultas para ganho de desempenho",
+      "Assinatura digital em documentos PDF",
+      "Backup full semanal em storage externo",
+      "Escalonamento horizontal de pods de aplicação",
+      "Criptografia assimétrica para troca de chaves"
+    ],
+    answer: 3
+  },
+  {
+    q: "Um atacante tenta usar uma lista de senhas comuns contra várias contas diferentes para evitar bloqueios automáticos.",
+    opts: ["Criptografia de disco","Fragmentação de IP","Pulverização de senhas","Hash seguro","Balanceamento de tráfego"],
+    answer: 2
+  },
+  {
+    q: "Durante um incidente em uma rede corporativa, um invasor posiciona‑se entre o cliente e o servidor, conseguindo ler e possivelmente alterar as mensagens trocadas entre eles.",
+    opts: ["Ataque de hash","Ataque de redundância","Ataque Man-in-the-Middle","Ataque de fragmentação","Ataque de compressão"],
+    answer: 2
+  },
+  {
+    q: "Um especialista em segurança observa que vários computadores infectados estão sendo controlados remotamente por um atacante para executar ataques coordenados.",
+    opts: ["Balanceador","Firewall","Proxy","Botnet","Switch"],
+    answer: 3
+  },
+  {
+    q: "Durante uma investigação de segurança, analistas identificaram que um invasor alterou discretamente o valor de uma transação em trânsito entre dois sistemas corporativos. O sistema de destino executou a operação acreditando que os dados eram legítimos.",
+    opts: ["Anonimização de dados","Interceptação passiva","Compressão de tráfego","Modificação de dados","Fragmentação de pacotes"],
+    answer: 3
+  },
+  {
+    q: "Durante um ataque, um invasor altera a permissão de um usuário de leitura para administrador em uma mensagem enviada ao servidor.",
+    opts: ["Modificação de controle de acesso","Segmentação VLAN","Balanceamento de carga","Compressão de tráfego","Interceptação passiva"],
+    answer: 0
+  },
+  {
+    q: "Uma equipe de segurança analisa um incidente em que um invasor capturou comunicações entre um cliente e um servidor web em uma rede Wi‑Fi pública. Embora os dados não tenham sido alterados, o atacante conseguiu visualizar informações confidenciais transmitidas durante a sessão.",
+    opts: ["Fabricação de mensagens","Segmentação de rede","Interceptação de dados","Interrupção de serviço","Modificação de integridade"],
+    answer: 2
+  },
+  {
+    q: "Em uma cafeteria, um analista conectou-se a uma rede Wi‑Fi aberta para acessar o webmail corporativo durante uma viagem. Algumas horas depois, o SOC identificou acessos não usuais à conta. Verificou-se que parte do tráfego trafegava sem proteção adequada e que metadados sensíveis também poderiam ser observados por terceiros. Qual alternativa representa corretamente o ataque ocorrido?",
+    opts: [
+      "Restauração de backup após falha de armazenamento",
+      "Aplicação de ACL IPv6 no roteador de borda",
+      "Desduplicação de arquivos no storage central",
+      "Interrupção de serviço com foco em disponibilidade",
+      "Segmentação de rede por política interna",
+      "Interceptação de dados com violação de confidencialidade",
+      "Atualização automática do navegador corporativo",
+      "Assinatura de logs para não repúdio",
+      "Criptografia de disco para proteção em repouso",
+      "Fabricação de identidades por engenharia social telefônica"
+    ],
+    answer: 5
+  }
+];
+
+const LETTERS = 'ABCDEFGHIJ';
+let state = { questions: [], current: 0, answers: {}, revealed: {}, shuffle: false };
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function initQuiz() {
+  state.questions = state.shuffle ? shuffleArray(QUESTIONS.map((q, i) => i)) : QUESTIONS.map((_, i) => i);
+  state.current = 0; state.answers = {}; state.revealed = {}; render();
+}
+
+function getScore() {
+  let c = 0, w = 0;
+  for (const idx in state.answers) { const qi = state.questions[idx]; if (state.answers[idx] === QUESTIONS[qi].answer) c++; else w++; }
+  return { correct: c, wrong: w, total: QUESTIONS.length };
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const score = getScore();
+  const allAnswered = Object.keys(state.revealed).length === QUESTIONS.length;
+  if (allAnswered && state.showResults) { renderResults(app, score); return; }
+
+  const qi = state.questions[state.current];
+  const question = QUESTIONS[qi];
+  const selected = state.answers[state.current];
+  const isRevealed = state.revealed[state.current];
+
+  let html = `
+    <div class="header"><h1>⚔️ Tipos de Ataque</h1><p>30 questões · Ataques, ameaças e defesas</p></div>
+    <div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length / QUESTIONS.length) * 100}%"></div></div>
+    <div class="progress-info"><span>Questão ${state.current + 1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+    <div class="controls-row">
+      <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+      <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle ? 'checked' : ''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
+    </div>
+    <div class="nav-dots">${state.questions.map((_, i) => {
+      let cls = 'nav-dot';
+      if (i === state.current) cls += ' active';
+      if (state.revealed[i] !== undefined) { const ri = state.questions[i]; cls += state.answers[i] === QUESTIONS[ri].answer ? ' answered-correct' : ' answered-wrong'; }
+      return `<div class="${cls}" onclick="goTo(${i})">${i + 1}</div>`;
+    }).join('')}</div>
+    <div class="question-card"><div class="question-number">Questão ${state.current + 1} · (original #${qi + 1})</div><div class="question-text">${question.q}</div></div>`;
+
+  if (isRevealed) {
+    const isCorrect = selected === question.answer;
+    html += `<div class="feedback ${isCorrect ? 'correct-fb' : 'wrong-fb'}">${isCorrect ? '✓ Correto! Boa!' : `✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`;
+  }
+
+  html += `<div class="options">`;
+  question.opts.forEach((opt, i) => {
+    let cls = 'option';
+    if (isRevealed) { cls += ' disabled'; if (i === question.answer) cls += ' correct-answer'; else if (i === selected && i !== question.answer) cls += ' wrong-answer'; }
+    else { if (i === selected) cls += ' selected'; }
+    html += `<div class="${cls}" ${!isRevealed ? `onclick="selectOption(${i})"` : ''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html += `</div><div class="btn-row">`;
+  if (state.current > 0) html += `<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if (!isRevealed) html += `<button class="btn btn-primary" ${selected === undefined ? 'disabled' : ''} onclick="confirm()">Confirmar</button>`;
+  else if (state.current < QUESTIONS.length - 1) html += `<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html += `<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html += `</div>`;
+  app.innerHTML = html;
+}
+
+function renderResults(app, score) {
+  const pct = Math.round((score.correct / score.total) * 100);
+  let msg = pct === 100 ? 'Perfeito! 🎉' : pct >= 80 ? 'Ótimo desempenho! 💪' : pct >= 60 ? 'Bom, mas dá pra melhorar!' : 'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML = `
+    <div class="header"><h1>⚔️ Segurança da Informação — Quiz 3</h1><p>Resultado Final</p></div>
+    <div class="results-card">
+      <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+      <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+      <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+    </div>`;
+}
+
+function selectOption(i) { state.answers[state.current] = i; render(); }
+function confirm() { state.revealed[state.current] = true; render(); }
+function next() { state.current++; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function prev() { state.current--; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function goTo(i) { state.current = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function showResults() { state.showResults = true; render(); }
+function reviewMode() { state.showResults = false; state.current = 0; render(); }
+function restart() { state.showResults = false; initQuiz(); }
+function toggleShuffle() { state.shuffle = !state.shuffle; initQuiz(); }
+
+initQuiz();
+</script>
+</body>
+</html>

@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 2 - Segurança Computacional</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-hover: #222633;
+  --border: #2a2e3d;
+  --text: #e4e6ed;
+  --text-muted: #7a7f93;
+  --accent: #e17055;
+  --accent-glow: rgba(225, 112, 85, 0.25);
+  --correct: #00b894;
+  --correct-bg: rgba(0, 184, 148, 0.1);
+  --correct-border: rgba(0, 184, 148, 0.4);
+  --wrong: #d63031;
+  --wrong-bg: rgba(214, 48, 49, 0.1);
+  --wrong-border: rgba(214, 48, 49, 0.4);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.noise {
+  position: fixed; inset: 0; z-index: -1; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.app {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 24px 20px 100px;
+}
+
+.header {
+  text-align: center;
+  padding: 40px 0 32px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #e17055, #fab1a0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.progress-bar-container {
+  background: var(--surface);
+  border-radius: 100px;
+  height: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #e17055, #fab1a0);
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  font-family: 'Space Mono', monospace;
+}
+
+.score-panel {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.score-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: 'Space Mono', monospace;
+}
+
+.score-chip.correct-chip {
+  background: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct);
+}
+
+.score-chip.wrong-chip {
+  background: var(--wrong-bg);
+  border: 1px solid var(--wrong-border);
+  color: var(--wrong);
+}
+
+.question-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.question-number {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+}
+
+.question-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.option:hover:not(.disabled) {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-glow);
+}
+
+.option .letter {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(225, 112, 85, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(225, 112, 85, 0.2);
+  transition: all 0.2s ease;
+}
+
+.option.selected {
+  border-color: var(--accent);
+  background: rgba(225, 112, 85, 0.08);
+}
+
+.option.selected .letter {
+  background: var(--accent);
+  color: #fff;
+}
+
+.option.correct-answer {
+  border-color: var(--correct-border) !important;
+  background: var(--correct-bg) !important;
+}
+
+.option.correct-answer .letter {
+  background: var(--correct) !important;
+  color: #fff !important;
+  border-color: var(--correct) !important;
+}
+
+.option.wrong-answer {
+  border-color: var(--wrong-border) !important;
+  background: var(--wrong-bg) !important;
+}
+
+.option.wrong-answer .letter {
+  background: var(--wrong) !important;
+  color: #fff !important;
+  border-color: var(--wrong) !important;
+}
+
+.option.disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.option.correct-answer.disabled,
+.option.wrong-answer.disabled {
+  opacity: 1;
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px var(--accent-glow);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--surface-hover);
+}
+
+.results-card {
+  text-align: center;
+  padding: 48px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  animation: fadeIn 0.5s ease;
+}
+
+.results-card .score-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  border: 4px solid var(--accent);
+  box-shadow: 0 0 40px var(--accent-glow);
+}
+
+.score-circle .big-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.score-circle .label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.results-card h2 {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+}
+
+.results-card p {
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.results-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.nav-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.nav-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.nav-dot:hover { border-color: var(--accent); }
+.nav-dot.active { border-color: var(--accent); background: rgba(225,112,85,0.15); color: var(--accent); }
+.nav-dot.answered-correct { border-color: var(--correct-border); background: var(--correct-bg); color: var(--correct); }
+.nav-dot.answered-wrong { border-color: var(--wrong-border); background: var(--wrong-bg); color: var(--wrong); }
+
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.toggle-label input { display: none; }
+
+.toggle-track {
+  width: 38px;
+  height: 20px;
+  border-radius: 100px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.toggle-label input:checked + .toggle-track {
+  background: var(--accent);
+}
+
+.toggle-label input:checked + .toggle-track::after {
+  left: 20px;
+  background: #fff;
+}
+
+.feedback {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  animation: fadeIn 0.25s ease;
+}
+
+.feedback.correct-fb {
+  background: var(--correct-bg);
+  border: 1px solid var(--correct-border);
+  color: var(--correct);
+}
+
+.feedback.wrong-fb {
+  background: var(--wrong-bg);
+  border: 1px solid var(--wrong-border);
+  color: var(--wrong);
+}
+
+@media (max-width: 600px) {
+  .app { padding: 16px 14px 80px; }
+  .question-card { padding: 20px 16px; }
+  .option { padding: 12px 14px; font-size: 0.88rem; }
+  .header h1 { font-size: 1.2rem; }
+  .nav-dot { width: 28px; height: 28px; font-size: 0.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "Um ERP registrou pedidos com valores alterados sem aprovação e, na auditoria, não foi possível explicar quem fez a mudança. A equipe precisa identificar qual objetivo principal da Tríade CIA foi afetado.",
+    opts: [
+      "Balanceamento de carga.",
+      "Redundância de energia.",
+      "Integridade.",
+      "Disponibilidade (Acessibilidade).",
+      "Confidencialidade."
+    ],
+    answer: 2
+  },
+  {
+    q: "Em uma empresa de varejo, o time de TI percebe que uma planilha com dados de clientes foi lida por um parceiro que não tinha autorização. O gestor pede para classificar qual objetivo da Tríade CIA foi violado nesse incidente.",
+    opts: [
+      "Autenticidade.",
+      "Integridade.",
+      "Confidencialidade.",
+      "Irretratabilidade (não repúdio).",
+      "Disponibilidade (Acessibilidade)."
+    ],
+    answer: 2
+  },
+  {
+    q: "Uma instituição precisa restringir o acesso a módulos conforme o cargo. Operadores podem consultar pedidos, analistas podem gerar relatórios e administradores podem alterar configurações. Hoje todos têm permissões amplas e isso já causou exposição indevida por erro humano. A equipe quer adotar um modelo em que permissões sejam atribuídas por função, reduzindo privilégios e facilitando auditoria. O objetivo é reforçar confidencialidade e também reduzir impacto caso uma conta seja comprometida. Considere que o controle deve ser gerenciável e refletir responsabilidades organizacionais. Qual mecanismo atende melhor esse requisito?",
+    opts: [
+      "RAID.",
+      "Assinatura digital.",
+      "Criptografia de disco como único controle.",
+      "Balanceamento de carga.",
+      "Controle de versão.",
+      "RBAC (controle de acesso baseado em funções).",
+      "Hashing.",
+      "UPS (nobreak).",
+      "VPN.",
+      "Ofuscação."
+    ],
+    answer: 5
+  },
+  {
+    q: "Um analista explica que ataques passivos são difíceis de detectar porque não alteram sistemas nem dados, apenas observam e coletam. Qual alternativa é um exemplo típico de ataque passivo?",
+    opts: [
+      "Negação de serviço (DoS).",
+      "Interceptação de comunicações e análise de tráfego de rede.",
+      "Modificação de mensagens.",
+      "Injeção de código malicioso.",
+      "Apagar arquivos do servidor."
+    ],
+    answer: 1
+  },
+  {
+    q: "Uma organização quer entender como ataques mudaram ao longo do tempo: de indivíduos isolados com ferramentas simples para grupos organizados e, por fim, atores estatais. Qual opção descreve corretamente essa evolução de forma resumida?",
+    opts: [
+      "De vírus para backups, sem mudança de motivação.",
+      "De criptografia fraca para criptografia forte, sem impacto na ameaça.",
+      "De ataques físicos para ataques apenas por e-mail, sem evolução de atores.",
+      "De redes locais para redes sem fio, sem mudança de técnicas.",
+      "De oportunistas simples para grupos sofisticados e, em alguns casos, capacidades ofensivas estatais."
+    ],
+    answer: 4
+  },
+  {
+    q: "Em uma empresa com sistemas legados, o suporte criou exceções manuais para resolver incidentes rapidamente. Essas exceções permitem que alguns usuários acessem recursos sem passar pelo mecanismo padrão de autorização. Com o tempo, surgiram caminhos alternativos e rotas que ignoram verificações, criando uma superfície de ataque invisível. Durante uma auditoria, foi detectado que um usuário de baixo privilégio conseguiu ler dados restritos usando uma dessas rotas. O time precisa justificar por que esses atalhos quebram um princípio fundamental de segurança e por que devem ser removidos. Qual princípio foi violado?",
+    opts: [
+      "Usabilidade e eficiência.",
+      "Criptografia de disco.",
+      "Separação de privilégios.",
+      "Autenticidade.",
+      "Padrão seguro (negar por padrão).",
+      "Irretratabilidade (não repúdio).",
+      "Balanceamento de carga.",
+      "Privilégio mínimo.",
+      "Disponibilidade por redundância.",
+      "Mediação completa (todo acesso deve ser verificado pelo mecanismo de controle, sem atalhos)."
+    ],
+    answer: 9
+  },
+  {
+    q: "Um banco quer limitar acesso a sistemas conforme o cargo do funcionário, evitando permissões amplas por padrão. Qual mecanismo de confidencialidade atende melhor esse objetivo?",
+    opts: [
+      "Hashing.",
+      "Balanceamento de carga.",
+      "RBAC (controle de acesso baseado em funções).",
+      "UPS.",
+      "RAID."
+    ],
+    answer: 2
+  },
+  {
+    q: "Um banco implementa um processo de autorização para pagamentos acima de determinado valor. O operador inicia a transação, mas ela só é concluída quando um supervisor aprova em um segundo passo independente. A ideia é reduzir risco de fraude e também reduzir impacto caso a conta do operador seja comprometida. Qual princípio é representado por esse desenho de controle?",
+    opts: [
+      "Confidencialidade.",
+      "Disponibilidade.",
+      "Mediação completa.",
+      "Elo mais fraco.",
+      "Integridade.",
+      "Ofuscação.",
+      "Privilégio mínimo.",
+      "Padrão seguro (negar por padrão).",
+      "Separação de privilégios (dupla autorização/separação de funções).",
+      "Usabilidade e eficiência."
+    ],
+    answer: 8
+  },
+  {
+    q: "Um controle de segurança exige senhas tão complexas que usuários passam a anotá-las em papéis visíveis. Qual princípio está em jogo quando controles difíceis de usar geram atalhos inseguros?",
+    opts: [
+      "Disponibilidade (Acessibilidade).",
+      "Separação de privilégios.",
+      "Ofuscação.",
+      "Irretratabilidade (não repúdio).",
+      "Usabilidade e eficiência."
+    ],
+    answer: 4
+  },
+  {
+    q: "Em uma organização, um administrador afirma que não precisa revisar configurações padrão e que ataques são raros. Um serviço é publicado com credenciais padrão de fábrica e portas expostas, e rapidamente sofre tentativas automatizadas de login. Qual alternativa descreve melhor o equívoco que levou à decisão insegura?",
+    opts: [
+      "A ideia de que logs devem ser desativados para reduzir risco.",
+      "A suposição de que criptografia impede qualquer ataque por força bruta.",
+      "A crença de que domínios novos impedem phishing automaticamente.",
+      "A ideia de que firewall elimina necessidade de senha forte e patching.",
+      "A crença de que backups substituem autenticação.",
+      "A ideia de que Wi‑Fi é o único vetor relevante.",
+      "A suposição de que RBAC só é necessário em bancos.",
+      "A crença de que ataques exigem presença física no datacenter.",
+      "Subestimar a ameaça automatizada e acreditar que \"ninguém vai tentar\" ou \"não somos alvo\".",
+      "A suposição de que contas genéricas melhoram auditoria e segurança."
+    ],
+    answer: 8
+  },
+  {
+    q: "Uma equipe publica um serviço novo com permissões abertas e senha padrão de fábrica, para facilitar testes. Depois, esquecem de fechar. Qual princípio de segurança foi ignorado ao não negar acesso por padrão?",
+    opts: [
+      "Mediação completa.",
+      "Integridade.",
+      "Separação de privilégios.",
+      "Controle de versão.",
+      "Padrão seguro (deny by default)."
+    ],
+    answer: 4
+  },
+  {
+    q: "Um serviço web ficou exposto porque a equipe cometeu um erro ao definir permissões e portas durante a instalação, apesar do software ser bem projetado. Esse problema se encaixa melhor em qual origem de falha de segurança?",
+    opts: [
+      "Erro de criptografia.",
+      "Erro de configuração.",
+      "Erro de operação.",
+      "Erro de implementação.",
+      "Erro de projeto."
+    ],
+    answer: 1
+  },
+  {
+    q: "Um analista precisa detectar se um arquivo foi alterado, mesmo que a mudança seja mínima. Qual mecanismo de integridade é o mais direto para isso?",
+    opts: [
+      "Hashing.",
+      "RAID.",
+      "Ofuscação.",
+      "VPN.",
+      "Balanceamento de carga."
+    ],
+    answer: 0
+  },
+  {
+    q: "Um serviço de rede estava rodando como administrador por padrão, e o time decide reduzir permissões ao mínimo necessário para a tarefa. Qual princípio de segurança está sendo aplicado?",
+    opts: [
+      "Elo mais fraco.",
+      "Privilégio mínimo.",
+      "Mediação completa.",
+      "Separação de privilégios.",
+      "Padrão seguro (deny by default)."
+    ],
+    answer: 1
+  },
+  {
+    q: "Um usuário com conta válida faz um ataque usando acesso lógico interno e às vezes acesso físico ao ambiente. Na classificação de localização do atacante, isso é um exemplo de quê?",
+    opts: [
+      "Ataque passivo.",
+      "DDoS.",
+      "Ataque remoto.",
+      "Ataque local.",
+      "Ataque de cadeia de suprimentos."
+    ],
+    answer: 3
+  },
+  {
+    q: "Durante um ataque de ransomware, sistemas de emissão de notas fiscais ficaram fora do ar por horas e o atendimento parou. Na linguagem do modelo CIA, qual objetivo foi mais diretamente comprometido?",
+    opts: [
+      "Confidencialidade.",
+      "Disponibilidade (Acessibilidade).",
+      "Integridade.",
+      "Autenticidade.",
+      "Irretratabilidade (não repúdio)."
+    ],
+    answer: 1
+  },
+  {
+    q: "Em um sistema legado, algumas rotas permitem acessar dados sem passar pelo mecanismo padrão de autorização. O auditor pede o nome do princípio violado quando existe esse tipo de atalho de acesso.",
+    opts: [
+      "Separação de privilégios.",
+      "Usabilidade e eficiência.",
+      "Padrão seguro (deny by default).",
+      "Mediação completa.",
+      "Privilégio mínimo."
+    ],
+    answer: 3
+  },
+  {
+    q: "Uma equipe usa a analogia da cebola para explicar camadas de proteção e a alcachofra para explicar múltiplos pontos de entrada. No modelo cebola, o atacante precisa atravessar controles em sequência para chegar a dados críticos. No modelo alcachofra, o ambiente moderno tem entradas distribuídas: e-mail, endpoints, nuvem, APIs e terceiros. Qual alternativa descreve melhor a ideia central correta?",
+    opts: [
+      "Cebola: focar só em disponibilidade; Alcachofra: focar só em integridade.",
+      "Cebola: permitir acesso amplo; Alcachofra: negar por padrão.",
+      "Cebola: evitar logs; Alcachofra: evitar autenticação.",
+      "Cebola: manter tudo em nuvem; Alcachofra: manter tudo on‑premises.",
+      "Cebola: usar portas não padrão; Alcachofra: usar RAID.",
+      "Cebola: camadas sucessivas de controles; Alcachofra: múltiplos pontos de entrada exigem reduzir superfície, segmentar e monitorar.",
+      "Cebola: esconder sistemas; Alcachofra: trocar senhas frequentemente.",
+      "Cebola: depender de uma única barreira; Alcachofra: depender de outra única barreira.",
+      "Cebola: eliminar terceiros; Alcachofra: eliminar backups.",
+      "Cebola: usar apenas criptografia; Alcachofra: usar apenas firewall."
+    ],
+    answer: 5
+  },
+  {
+    q: "Um time de segurança revisa um incidente e conclui que a causa raiz foi uma configuração incorreta. O software era adequado, o projeto era razoável e não havia bug conhecido, mas uma permissão foi deixada aberta durante a implantação. Qual classificação é a mais adequada para esse caso?",
+    opts: [
+      "Erro de operação.",
+      "Erro de projeto.",
+      "Ataque passivo.",
+      "Erro de implementação.",
+      "Ataque remoto.",
+      "Falha de disponibilidade por DDoS.",
+      "Erro de configuração.",
+      "Problema de assinatura digital.",
+      "Erro de balanceamento de carga.",
+      "Problema de hashing."
+    ],
+    answer: 6
+  },
+  {
+    q: "Em um exercício de resposta a incidentes, a equipe observa que uma conta de parceiro acessou endpoints fora do contrato e realizou muitas consultas. O parceiro é crítico para a operação do dia seguinte, então cortar tudo causaria parada total. Qual alternativa descreve melhor a ação imediata mais adequada?",
+    opts: [
+      "Alterar apenas portas e nomes de endpoints, mantendo credenciais iguais.",
+      "Bloquear toda a Internet da empresa por 24 horas, independentemente do impacto.",
+      "Permitir compartilhamento de conta com subcontratados para agilizar suporte.",
+      "Manter acesso amplo e aguardar mais evidências para não impactar operação.",
+      "Reduzir o escopo e permissões do parceiro ao mínimo operacional (revogando o excesso) e aplicar restrições temporárias com monitoramento.",
+      "Desativar logs para impedir que o atacante saiba que foi detectado.",
+      "Conceder privilégios de administrador ao parceiro para acelerar correções.",
+      "Trocar provedor de nuvem imediatamente, mantendo permissões amplas.",
+      "Reiniciar servidores e considerar a ameaça encerrada sem alterar credenciais.",
+      "Publicar detalhes técnicos do incidente antes de conter o acesso."
+    ],
+    answer: 4
+  },
+  {
+    q: "Para recuperar rapidamente sistemas após falhas ou ataques, o time mantém cópias periódicas de dados e configurações. Qual mecanismo isso descreve?",
+    opts: [
+      "RAID.",
+      "Hashing.",
+      "Ofuscação.",
+      "WAF.",
+      "Backups regulares."
+    ],
+    answer: 4
+  },
+  {
+    q: "Em uma apresentação para diretoria, você precisa explicar o que caracteriza uma APT em comparação com ataques oportunistas. Qual alternativa resume melhor uma APT?",
+    opts: [
+      "Ataque sempre feito por um único indivíduo com ferramentas simples.",
+      "Adversário com alta capacidade e persistência, usando múltiplos vetores e operando com baixo ruído para objetivos de longo prazo.",
+      "Um ataque que só ocorre dentro da mesma empresa.",
+      "Uma ação que depende apenas de senha fraca e não usa engenharia social.",
+      "Qualquer vírus comum que se espalha automaticamente."
+    ],
+    answer: 1
+  },
+  {
+    q: "Em uma investigação interna, o time consegue provar que um usuário realizou uma transação, e ele não pode negar a autoria depois. Qual propriedade de segurança descreve melhor essa garantia?",
+    opts: [
+      "Irretratabilidade (não repúdio).",
+      "Privilégio mínimo.",
+      "Disponibilidade (Acessibilidade).",
+      "Autenticidade.",
+      "Integridade."
+    ],
+    answer: 0
+  },
+  {
+    q: "Um laboratório de pesquisa mantém um repositório de documentos com fórmulas e resultados de experimentos. Um atacante não alterou nenhum arquivo, mas acessou e copiou relatórios confidenciais usando uma credencial vazada. A equipe percebeu apenas semanas depois. Qual dimensão do CIA foi mais diretamente comprometida?",
+    opts: [
+      "Balanceamento de carga.",
+      "Controle de versão.",
+      "Disponibilidade.",
+      "UPS (nobreak).",
+      "Irretratabilidade (não repúdio).",
+      "Integridade.",
+      "RAID 1.",
+      "Autenticidade.",
+      "Confidencialidade.",
+      "Backups regulares."
+    ],
+    answer: 8
+  },
+  {
+    q: "Durante um incidente, um atacante começa como usuário comum e tenta obter privilégios de administrador para instalar backdoors. Como se chama o mecanismo pelo qual ele obtém permissões superiores às originalmente concedidas?",
+    opts: [
+      "Elevação de privilégios (escalada de privilégios).",
+      "Balanceamento de carga.",
+      "Irretratabilidade.",
+      "Criptografia.",
+      "Controle de versão."
+    ],
+    answer: 0
+  },
+  {
+    q: "Um bug de programação permite que um atacante explore uma função e execute comandos inesperados no servidor. Qual origem de falha isso representa?",
+    opts: [
+      "Erro de configuração.",
+      "Erro de projeto.",
+      "Erro de operação.",
+      "Disponibilidade (Acessibilidade).",
+      "Erro de implementação."
+    ],
+    answer: 4
+  },
+  {
+    q: "Uma falha foi descoberta em um produto porque a autenticação foi desenhada de forma fraca desde o início. Corrigir o problema exige redesenhar fluxos e componentes, pois a vulnerabilidade é estrutural e afeta várias partes do sistema. Qual origem de falha descreve melhor esse tipo de vulnerabilidade?",
+    opts: [
+      "Problema de criptografia em trânsito.",
+      "Erro de RAID.",
+      "Erro de backup.",
+      "Problema de balanceamento de carga.",
+      "Erro de configuração.",
+      "Problema de ofuscação.",
+      "Erro de implementação.",
+      "Erro de operação.",
+      "Ataque passivo.",
+      "Erro de projeto."
+    ],
+    answer: 9
+  },
+  {
+    q: "Uma empresa precisa proteger comunicações entre filial e matriz em uma rede pública, garantindo confidencialidade do tráfego. Qual mecanismo é o mais apropriado?",
+    opts: [
+      "Syscall.",
+      "VPN (túnel criptografado).",
+      "RAID 1.",
+      "Controle de versão.",
+      "Ofuscação de banners."
+    ],
+    answer: 1
+  },
+  {
+    q: "Uma empresa de saúde atende pacientes em várias unidades e integra sistemas de prontuário, faturamento e laboratório. Para acelerar processos, um fornecedor de TI recebeu acesso remoto para suporte e passou a usar a mesma conta para vários técnicos. Com o tempo, essa conta ganhou permissões além do necessário. Nos logs aparecem consultas em massa e tentativas de acesso a endpoints fora do contrato. O atendimento não pode parar completamente. Qual medida é a melhor primeira resposta nesse cenário?",
+    opts: [
+      "Publicar uma nota pública detalhando os endpoints afetados antes de conter o acesso.",
+      "Desativar todos os logs para evitar que o atacante perceba que foi detectado.",
+      "Permitir que o fornecedor compartilhe a conta com subcontratados para acelerar correções.",
+      "Alterar apenas as portas dos serviços para portas não padrão e manter as permissões.",
+      "Revogar/limitar a credencial do fornecedor para o mínimo necessário (escopo e privilégios), habilitar MFA e manter monitoramento intensivo.",
+      "Trocar o provedor de nuvem imediatamente, mantendo as mesmas permissões e credenciais.",
+      "Bloquear toda a Internet da organização por 24 horas mesmo com impacto total na operação.",
+      "Manter o acesso inalterado e aguardar mais evidências para não impactar o serviço.",
+      "Reiniciar os servidores e considerar o problema resolvido sem alterar credenciais.",
+      "Conceder privilégios administrativos ao fornecedor para que ele investigue com mais liberdade e rapidez."
+    ],
+    answer: 4
+  },
+  {
+    q: "Durante a transmissão de dados pela rede, a equipe teme interceptação e manipulação do tráfego. Na classificação de onde estão os dados, isso descreve dados em qual estado?",
+    opts: [
+      "Processos e dados em execução.",
+      "Dados em repouso.",
+      "Dados autenticados.",
+      "Dados em trânsito.",
+      "Dados arquivados offline."
+    ],
+    answer: 3
+  }
+];
+
+const LETTERS = 'ABCDEFGHIJ';
+
+let state = {
+  questions: [],
+  current: 0,
+  answers: {},
+  revealed: {},
+  shuffle: false
+};
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function initQuiz() {
+  state.questions = state.shuffle ? shuffleArray(QUESTIONS.map((q, i) => i)) : QUESTIONS.map((_, i) => i);
+  state.current = 0;
+  state.answers = {};
+  state.revealed = {};
+  render();
+}
+
+function getScore() {
+  let c = 0, w = 0;
+  for (const idx in state.answers) {
+    const qi = state.questions[idx];
+    if (state.answers[idx] === QUESTIONS[qi].answer) c++;
+    else w++;
+  }
+  return { correct: c, wrong: w, total: QUESTIONS.length };
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const score = getScore();
+  const allAnswered = Object.keys(state.revealed).length === QUESTIONS.length;
+
+  if (allAnswered && state.showResults) {
+    renderResults(app, score);
+    return;
+  }
+
+  const qi = state.questions[state.current];
+  const question = QUESTIONS[qi];
+  const selected = state.answers[state.current];
+  const isRevealed = state.revealed[state.current];
+
+  let html = `
+    <div class="header">
+      <h1>🛡️ Segurança Computacional</h1>
+      <p>30 questões · Marque a alternativa correta</p>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar" style="width:${(Object.keys(state.revealed).length / QUESTIONS.length) * 100}%"></div>
+    </div>
+    <div class="progress-info">
+      <span>Questão ${state.current + 1} de ${QUESTIONS.length}</span>
+      <span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span>
+    </div>
+    <div class="controls-row">
+      <div class="score-panel">
+        <div class="score-chip correct-chip">✓ ${score.correct}</div>
+        <div class="score-chip wrong-chip">✗ ${score.wrong}</div>
+      </div>
+      <label class="toggle-label">
+        <span>Embaralhar</span>
+        <input type="checkbox" ${state.shuffle ? 'checked' : ''} onchange="toggleShuffle()">
+        <div class="toggle-track"></div>
+      </label>
+    </div>
+    <div class="nav-dots">
+      ${state.questions.map((_, i) => {
+        let cls = 'nav-dot';
+        if (i === state.current) cls += ' active';
+        if (state.revealed[i] !== undefined) {
+          const ri = state.questions[i];
+          cls += state.answers[i] === QUESTIONS[ri].answer ? ' answered-correct' : ' answered-wrong';
+        }
+        return `<div class="${cls}" onclick="goTo(${i})">${i + 1}</div>`;
+      }).join('')}
+    </div>
+    <div class="question-card">
+      <div class="question-number">Questão ${state.current + 1} · (original #${qi + 1})</div>
+      <div class="question-text">${question.q}</div>
+    </div>`;
+
+  if (isRevealed) {
+    const isCorrect = selected === question.answer;
+    html += `<div class="feedback ${isCorrect ? 'correct-fb' : 'wrong-fb'}">
+      ${isCorrect ? '✓ Correto! Boa!' : `✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}
+    </div>`;
+  }
+
+  html += `<div class="options">`;
+  question.opts.forEach((opt, i) => {
+    let cls = 'option';
+    if (isRevealed) {
+      cls += ' disabled';
+      if (i === question.answer) cls += ' correct-answer';
+      else if (i === selected && i !== question.answer) cls += ' wrong-answer';
+    } else {
+      if (i === selected) cls += ' selected';
+    }
+    html += `<div class="${cls}" ${!isRevealed ? `onclick="selectOption(${i})"` : ''}>
+      <div class="letter">${LETTERS[i]}</div>
+      <div>${opt}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="btn-row">`;
+  if (state.current > 0) {
+    html += `<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  }
+  if (!isRevealed) {
+    html += `<button class="btn btn-primary" ${selected === undefined ? 'disabled' : ''} onclick="confirm()">Confirmar</button>`;
+  } else {
+    if (state.current < QUESTIONS.length - 1) {
+      html += `<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+    } else {
+      html += `<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+    }
+  }
+  html += `</div>`;
+
+  app.innerHTML = html;
+}
+
+function renderResults(app, score) {
+  const pct = Math.round((score.correct / score.total) * 100);
+  let msg = '';
+  if (pct === 100) msg = 'Perfeito! Você mandou muito bem! 🎉';
+  else if (pct >= 80) msg = 'Ótimo desempenho! Quase lá! 💪';
+  else if (pct >= 60) msg = 'Bom, mas dá pra melhorar. Continue estudando!';
+  else msg = 'Precisa revisar mais. Não desista! 📚';
+
+  app.innerHTML = `
+    <div class="header">
+      <h1>🛡️ Segurança Computacional </h1>
+      <p>Resultado Final</p>
+    </div>
+    <div class="results-card">
+      <div class="score-circle">
+        <div class="big-num">${pct}%</div>
+        <div class="label">${score.correct}/${score.total}</div>
+      </div>
+      <h2>${msg}</h2>
+      <p>${score.correct} corretas · ${score.wrong} erradas</p>
+      <div class="results-actions">
+        <button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button>
+        <button class="btn btn-primary" onclick="restart()">Refazer Quiz</button>
+      </div>
+    </div>`;
+}
+
+function selectOption(i) { state.answers[state.current] = i; render(); }
+function confirm() { state.revealed[state.current] = true; render(); }
+function next() { state.current++; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function prev() { state.current--; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function goTo(i) { state.current = i; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function showResults() { state.showResults = true; render(); }
+function reviewMode() { state.showResults = false; state.current = 0; render(); }
+function restart() { state.showResults = false; initQuiz(); }
+function toggleShuffle() { state.shuffle = !state.shuffle; initQuiz(); }
+
+initQuiz();
+</script>
+</body>
+</html>
