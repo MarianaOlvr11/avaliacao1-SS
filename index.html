@@ -35,6 +35,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .card[data-quiz="8"]::before{background:#fab1a0}
 .card[data-quiz="9"]::before{background:#74b9ff}
 .card[data-quiz="10"]::before{background:#a29bfe}
+.card[data-quiz="11"]::before{background:#ff7675}
 .card[data-quiz="1"]:hover{box-shadow:0 8px 32px rgba(108,92,231,.15)}
 .card[data-quiz="2"]:hover{box-shadow:0 8px 32px rgba(225,112,85,.15)}
 .card[data-quiz="3"]:hover{box-shadow:0 8px 32px rgba(0,206,201,.15)}
@@ -45,6 +46,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .card[data-quiz="8"]:hover{box-shadow:0 8px 32px rgba(250,177,160,.15)}
 .card[data-quiz="9"]:hover{box-shadow:0 8px 32px rgba(116,185,255,.15)}
 .card[data-quiz="10"]:hover{box-shadow:0 8px 32px rgba(162,155,254,.15)}
+.card[data-quiz="11"]:hover{box-shadow:0 8px 32px rgba(255,118,117,.15)}
 .card-icon{font-size:2rem;flex-shrink:0;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
 .card-body{flex:1;min-width:0}
 .card-title{font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;letter-spacing:-.2px;margin-bottom:4px}
@@ -65,8 +67,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <h1>Segurança da Informação</h1>
     <p>Questionários interativos para revisão e estudo. Escolha um quiz e teste seus conhecimentos.</p>
     <div class="stats-row">
-      <div class="stat"><div class="stat-num">10</div><div class="stat-label">Quizzes</div></div>
-      <div class="stat"><div class="stat-num">275</div><div class="stat-label">Questões</div></div>
+      <div class="stat"><div class="stat-num">11</div><div class="stat-label">Quizzes</div></div>
+      <div class="stat"><div class="stat-num">305</div><div class="stat-label">Questões</div></div>
       <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Tentativas</div></div>
     </div>
   </div>
@@ -150,6 +152,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="card-desc">Associações e lacunas: RSA/OAEP/PSS, ECC/ECDSA/DSA, Diffie-Hellman/ECDH, assinatura digital e gestão de certificados.</div>
       </div>
       <div class="card-meta"><div class="card-badge">5 questões</div><div class="card-arrow">→</div></div>
+    </a>
+    <a href="negacao_servico.html" class="card" data-quiz="11">
+      <div class="card-icon">💥</div>
+      <div class="card-body">
+        <div class="card-title">Quiz 11 — Negação de Serviço (DoS/DDoS)</div>
+        <div class="card-desc">DoS vs DDoS, SYN Flood, Land Attack, amplificação DNS, Mirai, IDS/IPS, scrubbing, CDN, WAF e resposta a incidentes.</div>
+      </div>
+      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
     </a>
   </div>
   <div class="footer">

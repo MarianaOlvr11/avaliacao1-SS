@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 11 - Ataques de Negação de Serviço</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface-hover:#222633;--border:#2a2e3d;--text:#e4e6ed;--text-muted:#7a7f93;--accent:#d63031;--accent-glow:rgba(214,48,49,.25);--correct:#00b894;--correct-bg:rgba(0,184,148,.1);--correct-border:rgba(0,184,148,.4);--wrong:#d63031;--wrong-bg:rgba(214,48,49,.1);--wrong-border:rgba(214,48,49,.4);--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.noise{position:fixed;inset:0;z-index:-1;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{max-width:820px;margin:0 auto;padding:24px 20px 100px}
+.header{text-align:center;padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.header h1{font-family:'Space Mono',monospace;font-size:1.5rem;letter-spacing:-.5px;margin-bottom:6px;background:linear-gradient(135deg,#d63031,#e17055);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text-muted);font-size:.9rem}
+.progress-bar-container{background:var(--surface);border-radius:100px;height:6px;margin-bottom:12px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#d63031,#e17055);border-radius:100px;transition:width .4s ease}
+.progress-info{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:20px}
+.controls-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.score-panel{display:flex;gap:8px}
+.score-chip{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:100px}
+.correct-chip{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.wrong-chip{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+.toggle-label{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted);cursor:pointer}
+.toggle-label input{display:none}
+.toggle-track{width:38px;height:20px;border-radius:100px;background:var(--border);position:relative;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-muted);transition:all .2s}
+.toggle-label input:checked+.toggle-track{background:var(--accent)}
+.toggle-label input:checked+.toggle-track::after{left:20px;background:#0f1117}
+.nav-dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.nav-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s ease}
+.nav-dot:hover{border-color:var(--accent)}
+.nav-dot.active{border-color:var(--accent);background:rgba(214,48,49,.15);color:var(--accent)}
+.nav-dot.answered-correct{border-color:var(--correct-border);background:var(--correct-bg);color:var(--correct)}
+.nav-dot.answered-wrong{border-color:var(--wrong-border);background:var(--wrong-bg);color:var(--wrong)}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;margin-bottom:16px}
+.question-number{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--text-muted);margin-bottom:10px;letter-spacing:.5px}
+.question-text{font-size:.97rem;line-height:1.7;color:var(--text)}
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s ease;font-size:.9rem}
+.option:hover:not(.disabled){border-color:var(--accent);background:rgba(214,48,49,.05)}
+.option.selected{border-color:var(--accent);background:rgba(214,48,49,.1)}
+.option.disabled{cursor:default}
+.option.correct-answer{border-color:var(--correct-border)!important;background:var(--correct-bg)!important;color:var(--correct)}
+.option.wrong-answer{border-color:var(--wrong-border)!important;background:var(--wrong-bg)!important;color:var(--wrong)}
+.letter{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);flex-shrink:0;margin-top:1px}
+.feedback{padding:12px 18px;border-radius:10px;font-size:.88rem;font-weight:500;margin-bottom:16px;animation:fadeIn .25s ease}
+.feedback.correct-fb{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.feedback.wrong-fb{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .15s ease}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.results-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-top:24px}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px}
+.big-num{font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--accent)}
+.results-card h2{font-size:1.3rem;margin-bottom:8px}
+.results-card p{color:var(--text-muted);margin-bottom:28px}
+.results-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-muted);text-decoration:none;margin-bottom:24px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+@media(max-width:600px){.app{padding:16px 14px 80px}.question-card{padding:20px 16px}.option{padding:12px 14px;font-size:.88rem}.header h1{font-size:1.15rem}.nav-dot{width:28px;height:28px;font-size:.6rem}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+<script>
+const QUESTIONS=[
+  {
+    q:"Em um datacenter, uma solução analisava cópias do tráfego e gerava alertas quando padrões suspeitos eram detectados. Ela não estava no caminho direto dos pacotes e, por isso, não bloqueava sozinha o fluxo malicioso. A equipe usava seus alertas para acionar regras em outros controles, chamar plantonistas e iniciar investigação. O professor explicou que esse tipo de componente é útil para visibilidade e detecção, mas não deve ser confundido com prevenção em linha. Qual componente está sendo descrito?",
+    opts:[
+      "Servidor C2.",
+      "IDS.",
+      "Scrubbing center obrigatório.",
+      "Cifra de bloco.",
+      "Botnet de IoT.",
+      "IPS em linha.",
+      "Servidor DNS autoritativo.",
+      "CDN de conteúdo estático.",
+      "Balanceador de carga.",
+      "Autoridade certificadora."
+    ],
+    answer:1
+  },
+  {
+    q:"Em uma loja virtual, os usuários conseguiam abrir a página inicial, mas a busca de produtos ficava travada. Os logs mostravam muitas requisições aparentemente normais contra o endpoint de pesquisa, que realizava consultas pesadas no banco de dados. Poucos milhares de acessos por minuto já eram suficientes para degradar o serviço, sem saturar o link de rede. Qual categoria de ataque se encaixa melhor nesse caso?",
+    opts:[
+      "Ataque de substituição de certificado.",
+      "Ataque na camada de aplicação.",
+      "Ataque de engenharia social por e-mail.",
+      "Ataque volumétrico puro.",
+      "Ataque físico ao cabeamento."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma empresa instalou uma solução que opera no caminho do tráfego e pode bloquear automaticamente pacotes classificados como maliciosos. O responsável alertou que regras mal calibradas poderiam causar falsos positivos e afetar usuários legítimos, comprometendo justamente a disponibilidade que se deseja proteger. Qual componente está sendo descrito?",
+    opts:[
+      "Servidor de backup offline.",
+      "CDN de imagens.",
+      "IDS passivo.",
+      "Ataque SYN Flood.",
+      "IPS."
+    ],
+    answer:4
+  },
+  {
+    q:"Em um laboratório de redes, um servidor recebeu grande volume de requisições originadas de um conjunto muito pequeno de endereços sob controle do atacante. A equipe conseguiu identificar rapidamente a origem predominante e aplicar bloqueios pontuais no firewall. O professor explicou que esse cenário costuma ser mais simples de conter do que um ataque com milhares de fontes espalhadas pela internet. Qual tipo de ataque foi descrito?",
+    opts:[
+      "Ataque de força bruta contra senha.",
+      "Man-in-the-Middle.",
+      "DDoS.",
+      "Phishing.",
+      "DoS."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma empresa instalou uma solução que fica diretamente no caminho do tráfego de rede. Quando padrões classificados como maliciosos são detectados, ela pode bloquear pacotes ou encerrar conexões automaticamente. Durante os testes, a equipe percebeu que regras agressivas bloqueavam usuários legítimos de um sistema crítico. O professor explicou que a capacidade de bloqueio em linha aumenta a resposta, mas exige calibração rigorosa. A discussão comparou esse componente com sistemas que apenas alertam. Qual componente está sendo descrito?",
+    opts:[
+      "IPS.",
+      "CDN de imagens.",
+      "Botnet Mirai.",
+      "IDS passivo.",
+      "Roteador sem regras.",
+      "Servidor de backup offline.",
+      "Certificado X.509.",
+      "Ataque SYN Flood.",
+      "Servidor de e-mail S/MIME.",
+      "Hash SHA-256."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma rede corporativa, todos os servidores internos estavam no mesmo segmento, sem separação por zonas de confiança. Quando um serviço exposto foi sobrecarregado, a degradação se espalhou para sistemas que não deveriam estar diretamente envolvidos. A equipe decidiu isolar serviços críticos e controlar o tráfego entre áreas para limitar o raio de impacto. Qual medida foi adotada?",
+    opts:[
+      "Aumento da exposição pública.",
+      "Segmentação de rede.",
+      "Remoção de balanceadores.",
+      "Uso de senhas compartilhadas.",
+      "Aceitação de certificados expirados."
+    ],
+    answer:1
+  },
+  {
+    q:"Um e-commerce havia contratado previamente um serviço que desviava o tráfego de entrada para centros especializados de limpeza. Durante um ataque de 200 Gbps, pacotes maliciosos foram descartados antes de chegar ao ambiente local, e apenas tráfego legítimo retornou aos servidores. A empresa evitou indisponibilidade porque o contrato já existia antes do incidente. Qual técnica está descrita?",
+    opts:[
+      "Scrubbing.",
+      "Cifra de César.",
+      "Port scan.",
+      "Land Attack.",
+      "Ataque de senha por dicionário."
+    ],
+    answer:0
+  },
+  {
+    q:"Em um incidente, um sistema analisava tráfego de forma passiva e gerava alertas quando padrões maliciosos eram identificados. Ele não interrompia os pacotes sozinho; a decisão de resposta cabia à equipe de segurança. O professor destacou que essa função é observar, correlacionar e notificar. Qual componente está sendo descrito?",
+    opts:[
+      "Servidor C2.",
+      "CDN.",
+      "Botnet.",
+      "IPS.",
+      "IDS."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma plataforma de notícias usa servidores distribuídos em vários pontos de presença para entregar imagens, scripts e vídeos perto dos usuários. Durante picos de tráfego, grande parte das requisições é atendida pelo cache, reduzindo a carga sobre o servidor de origem. A arquitetura também ajuda a absorver volumes elevados por estar distribuída. Qual tecnologia contribui para essa resiliência?",
+    opts:[
+      "SYN Flood.",
+      "Land Attack.",
+      "CDN.",
+      "ICMP Echo Request.",
+      "Chave privada."
+    ],
+    answer:2
+  },
+  {
+    q:"Um professor apresentou o caso de um ataque em que câmeras IP, gravadores de vídeo digital e outros dispositivos IoT comprometidos foram usados para gerar tráfego massivo contra provedores de DNS. Muitos equipamentos tinham credenciais padrão e passaram a integrar uma botnet. O impacto atingiu serviços populares que dependiam da resolução de nomes. Qual caso histórico está relacionado a esse ataque volumétrico massivo?",
+    opts:[
+      "Mirai.",
+      "Panix como ataque de aplicação HTTP.",
+      "Land Attack.",
+      "Cifra de César.",
+      "S/MIME."
+    ],
+    answer:0
+  },
+  {
+    q:"Um servidor TCP começou a acumular grande quantidade de conexões parcialmente abertas. O atacante enviava o primeiro pacote do handshake, o servidor reservava recursos e respondia, mas a etapa final nunca era concluída. Com o tempo, a fila de conexões pendentes cresceu até prejudicar novos acessos legítimos. A equipe discutiu mecanismos como SYN cookies, ajuste de backlog e filtragem em borda. Qual ataque foi explorado?",
+    opts:[
+      "Phishing com coleta de senha.",
+      "UDP reflection via DNS aberto.",
+      "SYN Flood.",
+      "Ataque de dicionário contra login.",
+      "Quebra de criptografia assimétrica.",
+      "DNS cache poisoning.",
+      "Assinatura digital inválida.",
+      "XSS armazenado.",
+      "Land Attack por IP e porta idênticos.",
+      "Varredura passiva de portas."
+    ],
+    answer:2
+  },
+  {
+    q:"Durante uma aula sobre ataques de protocolo, foi mostrado um pacote TCP SYN em que endereço IP de origem e destino eram iguais, ambos apontando para o próprio alvo. Sistemas antigos processavam essa situação de forma inadequada, podendo travar ou reiniciar mesmo sem grande volume de tráfego. Qual ataque histórico corresponde a essa técnica?",
+    opts:[
+      "Land Attack.",
+      "Mirai DNS Flood.",
+      "Ataque por certificado revogado.",
+      "HTTP GET legítimo.",
+      "Ataque Mafiaboy por botnet universitária."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma empresa mantinha câmeras IP, painéis de automação e gravadores expostos diretamente à internet. Vários equipamentos ainda usavam credenciais de fábrica, serviços desnecessários ativos e firmware antigo. Após um incidente externo, a equipe descobriu que alguns desses dispositivos participavam de tráfego anômalo contra terceiros. A organização não era o alvo principal, mas havia se tornado parte da infraestrutura ofensiva de uma botnet. Qual princípio de defesa está mais diretamente envolvido?",
+    opts:[
+      "Colocar todos os dispositivos IoT na mesma rede dos servidores críticos.",
+      "Ignorar tráfego de saída, pois DDoS só afeta quem é alvo.",
+      "Substituir segmentação por compartilhamento de chave privada.",
+      "Publicar senhas padrão para facilitar suporte remoto.",
+      "Desativar atualizações para manter compatibilidade com botnets conhecidas.",
+      "Abrir portas de administração para toda a internet por conveniência.",
+      "Reduzir a superfície exposta e endurecer dispositivos para evitar recrutamento em botnets.",
+      "Permitir acesso anônimo Telnet como prática de resiliência.",
+      "Remover logs para reduzir desgaste do armazenamento.",
+      "Usar Cifra de César para proteger senhas de fábrica."
+    ],
+    answer:6
+  },
+  {
+    q:"Depois que um ataque cessou, a equipe manteve bloqueios emergenciais aplicados durante a crise, sem revisar se ainda eram necessários. Alguns clientes legítimos continuaram sem acesso ao serviço, mesmo com tráfego normalizado. O gerente explicou que a recuperação não termina quando o tráfego malicioso diminui. Qual ação deveria ser realizada?",
+    opts:[
+      "Declarar recuperação sem verificar latência, erros e taxa de sucesso.",
+      "Desativar monitoramento para evitar novos alertas.",
+      "Apagar evidências para encerrar rapidamente o incidente.",
+      "Manter todos os bloqueios para sempre, independentemente do impacto.",
+      "Revisar e remover bloqueios temporários, validando métricas e logs pós-estabilização."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma promoção relâmpago gerou pico de tráfego semelhante a um ataque volumétrico, mas a análise mostrou aumento proporcional de logins, conversões e navegação coerente com a campanha. A distribuição geográfica também correspondia à base real de clientes. A equipe decidiu evitar bloqueios amplos antes de correlacionar sinais técnicos e de negócio. Qual conclusão é mais adequada?",
+    opts:[
+      "Todo aumento de tráfego deve ser tratado como ataque sem análise.",
+      "A resposta correta é bloquear todos os países externos.",
+      "O pico pode ser legítimo e deve ser diferenciado de ataque por métricas técnicas e de negócio.",
+      "Conversões e logins não ajudam a diferenciar tráfego legítimo.",
+      "Campanhas de marketing não geram picos de acesso."
+    ],
+    answer:2
+  },
+  {
+    q:"Após um ataque, a equipe de segurança reuniu logs de firewall, balanceador, aplicação, provedor de internet, WAF e servidores. Cada fonte contava uma parte diferente da história: origem aparente, endpoint atacado, código HTTP, volume, tempo e efeito nos nós internos. Isoladamente, nenhum log explicava completamente a progressão do incidente. Ao cruzar as evidências, a equipe identificou o início da anomalia, a camada mais afetada e a eficácia das regras aplicadas. Qual abordagem está sendo adotada?",
+    opts:[
+      "Publicação da chave privada em relatório interno.",
+      "Remoção de evidências após estabilização.",
+      "Apagamento de timestamps para proteger privacidade operacional.",
+      "Uso exclusivo de uma única métrica de CPU.",
+      "Conversão dos logs em imagem sem análise.",
+      "Aceitação automática de todo tráfego HTTPS.",
+      "Bloqueio cego de todos os usuários.",
+      "Correlação de logs e sinais de múltiplas fontes.",
+      "Substituição de logs por relatos verbais.",
+      "Desativação do WAF para reduzir dados coletados."
+    ],
+    answer:7
+  },
+  {
+    q:"Uma empresa segmentou a rede em zonas para serviços públicos, bancos de dados, administração e usuários internos. Quando um serviço exposto sofreu sobrecarga, os controles entre zonas impediram que o tráfego se espalhasse livremente para sistemas críticos internos. O professor destacou que segmentação não impede todo DDoS, mas limita propagação e melhora governança do tráfego. Qual medida está sendo descrita?",
+    opts:[
+      "Encerramento de logs entre zonas.",
+      "Exposição direta do banco de dados à internet.",
+      "Desativação de rotas internas para impedir auditoria.",
+      "Uso de senhas compartilhadas entre administradores.",
+      "Publicação de ambientes de teste sem controle.",
+      "Aceitação de certificados expirados em todos os serviços.",
+      "Mistura de todos os servidores no mesmo segmento.",
+      "Substituição de firewall por planilha manual.",
+      "Segmentação de rede por zonas de confiança e função.",
+      "Remoção de balanceadores de carga."
+    ],
+    answer:8
+  },
+  {
+    q:"Em um laboratório de redes, os alunos analisaram pacotes TCP construídos com endereço de origem e destino iguais, apontando para o próprio alvo. O pacote também usava valores de porta que levavam sistemas vulneráveis a responderem a si mesmos ou entrarem em comportamento anômalo. O professor explicou que, em sistemas modernos, esse ataque histórico tende a ser filtrado, mas ainda é importante para compreender validação de pacotes. A defesa envolve filtragem de pacotes malformados e sistemas atualizados. Qual ataque está sendo descrito?",
+    opts:[
+      "S/MIME com certificado inválido.",
+      "DNS amplification com resolvedores abertos.",
+      "Mirai usando câmeras IoT.",
+      "Land Attack.",
+      "HTTP GET flood em camada de aplicação.",
+      "Cifra de César aplicada a pacotes TCP.",
+      "Ataque por força bruta em senha SSH.",
+      "Phishing de credenciais administrativas.",
+      "Slowloris por cabeçalhos incompletos.",
+      "ARP spoofing em rede local."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma plataforma de vídeos começou a receber tráfego malicioso simultâneo de milhares de dispositivos localizados em diferentes países. O bloqueio de um único endereço IP não produziu efeito relevante, porque novas origens continuavam enviando requisições. A equipe concluiu que a defesa exigiria atuação coordenada com provedor, rede e aplicação. Qual tipo de ataque está mais bem caracterizado nesse cenário?",
+    opts:[
+      "DDoS.",
+      "Erro de autenticação multifator.",
+      "DoS de origem única.",
+      "SQL Injection local.",
+      "Ataque físico ao data center."
+    ],
+    answer:0
+  },
+  {
+    q:"Um roteador de borda recebeu regras para permitir HTTP e HTTPS da rede interna para a internet e negar todo o restante por padrão. O objetivo era limitar comunicações não previstas e reduzir a superfície exposta. A equipe foi alertada de que regras mal planejadas poderiam bloquear tráfego legítimo ou deixar serviços indevidos abertos. Qual mecanismo está sendo utilizado?",
+    opts:[
+      "Cifra de fluxo.",
+      "Ataque Land.",
+      "ACL.",
+      "Assinatura digital.",
+      "Botnet."
+    ],
+    answer:2
+  },
+  {
+    q:"Durante a Black Friday, um e-commerce começou a receber tráfego em volume muito superior à capacidade de seu link. A mitigação local não teve efeito, pois os pacotes já chegavam depois que a conexão estava saturada. O consultor explicou que a filtragem deveria ocorrer antes do gargalo, em um provedor ou serviço especializado, para que apenas tráfego limpo chegasse ao ambiente da empresa. Qual medida é mais adequada nesse cenário?",
+    opts:[
+      "Trocar a senha dos usuários do site.",
+      "Assinar digitalmente as páginas HTML.",
+      "Acionar scrubbing ou mitigação upstream.",
+      "Instalar um antivírus nas estações dos clientes.",
+      "Aumentar apenas o tamanho do disco local."
+    ],
+    answer:2
+  },
+  {
+    q:"Um provedor identificou grande volume de respostas DNS chegando ao servidor de uma vítima. A investigação mostrou que o atacante enviava consultas pequenas para resolvedores abertos, falsificando o endereço de origem como se fosse o IP da vítima. Os resolvedores respondiam com mensagens maiores para a vítima, multiplicando o volume de tráfego recebido. A vítima parecia receber tráfego de muitos servidores legítimos, embora eles estivessem sendo abusados como refletores. Qual técnica está sendo usada pelo atacante?",
+    opts:[
+      "SYN cookies para reduzir conexões half-open.",
+      "Cache de CDN para conteúdo estático.",
+      "Criptografia simétrica em modo GCM.",
+      "Assinatura digital de e-mail com S/MIME.",
+      "Land Attack com origem e destino idênticos no mesmo pacote.",
+      "Ataque de dicionário contra painel administrativo.",
+      "Ataque de reflexão e amplificação DNS com spoofing de origem.",
+      "Renovação de certificado TLS expirado.",
+      "Autenticação multifator em contas privilegiadas.",
+      "Segmentação interna por VLANs."
+    ],
+    answer:6
+  },
+  {
+    q:"Durante a semana de provas, o portal acadêmico de uma faculdade ficou lento justamente quando alunos tentavam emitir boletos e baixar materiais de estudo. A equipe de TI percebeu que os servidores ainda estavam ligados, mas o serviço não respondia dentro do tempo esperado. O coordenador explicou que nem todo incidente envolve roubo de dados; às vezes, o problema principal é impedir que usuários autorizados utilizem o recurso quando precisam. Qual propriedade da segurança da informação estava sendo afetada?",
+    opts:[
+      "Autenticidade.",
+      "Criptografia.",
+      "Confidencialidade.",
+      "Disponibilidade.",
+      "Irretratabilidade."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma organização observou um pico anormal de pacotes ICMP Echo Request chegando de várias origens. O tráfego consumia banda e ciclos de processamento, afetando tanto a entrada quanto a saída da comunicação. O analista classificou a situação como abuso de um protocolo normalmente usado para diagnóstico e conectividade. Qual ataque está mais próximo desse comportamento?",
+    opts:[
+      "Cifragem simétrica com AES.",
+      "Ataque de assinatura digital falsa.",
+      "Erro de renovação de certificado.",
+      "ICMP excessivo ou ping flood.",
+      "Ataque de dicionário contra login."
+    ],
+    answer:3
+  },
+  {
+    q:"Durante um incidente, a equipe bloqueou rapidamente tráfego vindo de endereços listados em feeds de inteligência como fontes recorrentes de atividade maliciosa. Também considerou restrições temporárias por região, mas avaliou o risco de afetar clientes legítimos. O coordenador reforçou que esse tipo de filtragem deve ser combinado com outros sinais. Qual técnica está sendo usada com cautela?",
+    opts:[
+      "Criptografia assimétrica de e-mail.",
+      "Substituição de DNS por arquivo local.",
+      "Filtragem por reputação e geografia.",
+      "Desligamento completo dos logs.",
+      "Cifragem de disco com AES."
+    ],
+    answer:2
+  },
+  {
+    q:"Um hospital enfrentou indisponibilidade parcial em seu portal de marcação de consultas. A equipe iniciou a resposta verificando se o problema era total ou restrito a alguns serviços, quais camadas estavam envolvidas e quais usuários eram mais afetados. Também definiu quem acionaria provedor, equipe de aplicação, comunicação institucional e gestão executiva. Cada decisão foi registrada com horário, justificativa e resultado observado. Qual prática está sendo aplicada?",
+    opts:[
+      "Ignorar origem, camada e serviços afetados.",
+      "Publicar detalhes sensíveis da mitigação em rede social.",
+      "Suspender monitoramento para evitar alertas repetidos.",
+      "Aceitar qualquer tráfego para evitar bloqueio indevido.",
+      "Trocar todas as senhas sem avaliar a disponibilidade.",
+      "Desligar permanentemente o serviço afetado.",
+      "Remover comunicação com o provedor para reduzir dependência.",
+      "Apagar logs para liberar espaço em disco.",
+      "Excluir relatórios de incidente após normalização.",
+      "Resposta inicial estruturada com confirmação, escopo, acionamento, registro e priorização."
+    ],
+    answer:9
+  },
+  {
+    q:"Uma API de autenticação começou a falhar sem que houvesse saturação do link de internet. Os logs mostravam muitas requisições aparentemente válidas, todas direcionadas ao mesmo endpoint caro de processar. O firewall de rede permitia o tráfego, pois ele usava HTTPS corretamente. Qual ferramenta é mais apropriada para analisar e mitigar padrões abusivos nessa camada?",
+    opts:[
+      "Somente troca de senha do administrador.",
+      "Desativação de todos os logs da aplicação.",
+      "WAF ajustado ao comportamento real da aplicação.",
+      "Assinatura digital de cada usuário final.",
+      "Apenas cabo de rede blindado."
+    ],
+    answer:2
+  },
+  {
+    q:"Uma universidade preparou um simulado de vestibular on-line e esperava tráfego alto no horário de início. A equipe criou painéis com métricas de negócio, saúde da aplicação, erros HTTP, fila do banco, uso de CPU, p95 de latência e origem dos acessos. Também combinou previamente com provedor, CDN e equipe de comunicação para responder rapidamente caso o pico se tornasse anômalo. Como o plano já existia, a equipe aplicou filtros graduais sem derrubar o acesso geral dos candidatos. Qual prática está melhor representada?",
+    opts:[
+      "Usar somente senha forte para resolver saturação de aplicação.",
+      "Desativar CDN em eventos de alto tráfego para simplificar o caminho.",
+      "Remover métricas de negócio por não ajudarem na segurança.",
+      "Ignorar comunicação com usuários durante incidentes.",
+      "Bloquear todo tráfego no horário de início do simulado.",
+      "Aceitar indisponibilidade como inevitável e não monitorar.",
+      "Planejamento prévio de capacidade, monitoramento e resposta coordenada a DoS/DDoS.",
+      "Publicar regras de defesa sensíveis em canal aberto.",
+      "Confiar apenas em reinicialização manual dos servidores.",
+      "Aguardar o ataque começar para descobrir quem deve ser acionado."
+    ],
+    answer:6
+  },
+  {
+    q:"Ao iniciar a resposta a uma possível negação de serviço, a equipe primeiro confirmou se a indisponibilidade era parcial ou total, quais serviços estavam afetados, qual camada parecia envolvida e quem precisava ser acionado. Todas as decisões foram registradas com horário para apoiar a análise posterior. Qual prática corresponde a essa etapa?",
+    opts:[
+      "Publicar detalhes sensíveis da mitigação em canal aberto.",
+      "Apagar logs para liberar espaço.",
+      "Resposta inicial ao incidente com confirmação, identificação, acionamento e registro.",
+      "Desligar permanentemente o serviço afetado.",
+      "Ignorar a origem e focar apenas na aparência do site."
+    ],
+    answer:2
+  },
+  {
+    q:"Uma startup publicou vários serviços de teste diretamente na internet para facilitar demonstrações comerciais. Meses depois, sofreu sucessivas tentativas de abuso contra portas, protocolos e endpoints que não eram necessários em produção. O consultor recomendou desativar tudo que não tivesse justificativa operacional documentada. Qual princípio de defesa está sendo aplicado?",
+    opts:[
+      "Desativação de segmentação de rede.",
+      "Remoção de autenticação dos endpoints.",
+      "Distribuição pública de chaves privadas.",
+      "Aumento intencional de portas abertas.",
+      "Redução da superfície de ataque exposta."
+    ],
+    answer:4
+  }
+];
+
+const LETTERS='ABCDEFGHIJ';
+let state={questions:[],current:0,answers:{},revealed:{},shuffle:false,showResults:false};
+
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function initQuiz(){
+  state.questions=state.shuffle?shuffleArray(QUESTIONS.map((_,i)=>i)):QUESTIONS.map((_,i)=>i);
+  state.current=0;state.answers={};state.revealed={};state.showResults=false;render();
+}
+
+function getScore(){
+  let c=0,w=0;
+  for(const idx in state.revealed){const qi=state.questions[idx];if(state.answers[idx]===QUESTIONS[qi].answer)c++;else w++;}
+  return{correct:c,wrong:w,total:QUESTIONS.length};
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const score=getScore();
+  const allRevealed=Object.keys(state.revealed).length===QUESTIONS.length;
+  if(allRevealed&&state.showResults){renderResults(app,score);return;}
+  const qi=state.questions[state.current];
+  const question=QUESTIONS[qi];
+  const selected=state.answers[state.current];
+  const isRevealed=state.revealed[state.current]!==undefined;
+  let html=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>💥 Negação de Serviço (DoS/DDoS) — Quiz 11</h1><p>30 questões · DoS, DDoS, SYN Flood, amplificação DNS, Mirai, IDS/IPS, scrubbing, CDN e resposta a incidentes</p></div>
+<div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length/QUESTIONS.length)*100}%"></div></div>
+<div class="progress-info"><span>Questão ${state.current+1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+<div class="controls-row">
+  <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+  <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle?'checked':''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
+</div>
+<div class="nav-dots">${state.questions.map((_,i)=>{
+  let cls='nav-dot';
+  if(i===state.current)cls+=' active';
+  if(state.revealed[i]!==undefined){const ri=state.questions[i];cls+=state.answers[i]===QUESTIONS[ri].answer?' answered-correct':' answered-wrong';}
+  return`<div class="${cls}" onclick="goTo(${i})">${i+1}</div>`;
+}).join('')}</div>
+<div class="question-card"><div class="question-number">Questão ${state.current+1} · (original #${qi+1})</div><div class="question-text">${question.q}</div></div>`;
+  if(isRevealed){
+    const ok=selected===question.answer;
+    html+=`<div class="feedback ${ok?'correct-fb':'wrong-fb'}">${ok?'✓ Correto! Boa!':`✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`;
+  }
+  html+=`<div class="options">`;
+  question.opts.forEach((opt,i)=>{
+    let cls='option';
+    if(isRevealed){cls+=' disabled';if(i===question.answer)cls+=' correct-answer';else if(i===selected&&i!==question.answer)cls+=' wrong-answer';}
+    else{if(i===selected)cls+=' selected';}
+    html+=`<div class="${cls}" ${!isRevealed?`onclick="selectOption(${i})"`:''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html+=`</div><div class="btn-row">`;
+  if(state.current>0)html+=`<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if(!isRevealed)html+=`<button class="btn btn-primary" ${selected===undefined?'disabled':''} onclick="confirm()">Confirmar</button>`;
+  else if(state.current<QUESTIONS.length-1)html+=`<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html+=`<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html+=`</div>`;
+  app.innerHTML=html;
+}
+
+function renderResults(app,score){
+  const pct=Math.round((score.correct/score.total)*100);
+  let msg=pct===100?'Perfeito! 🎉':pct>=80?'Ótimo desempenho! 💪':pct>=60?'Bom, mas dá pra melhorar!':'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>💥 Negação de Serviço (DoS/DDoS) — Quiz 11</h1><p>Resultado Final</p></div>
+<div class="results-card">
+  <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+  <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+  <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+</div>`;
+}
+
+function selectOption(i){state.answers[state.current]=i;render();}
+function confirm(){state.revealed[state.current]=true;render();}
+function next(){state.current++;render();window.scrollTo({top:0,behavior:'smooth'});}
+function prev(){state.current--;render();window.scrollTo({top:0,behavior:'smooth'});}
+function goTo(i){state.current=i;render();window.scrollTo({top:0,behavior:'smooth'});}
+function showResults(){state.showResults=true;render();}
+function reviewMode(){state.showResults=false;state.current=0;render();}
+function restart(){state.showResults=false;initQuiz();}
+function toggleShuffle(){state.shuffle=!state.shuffle;initQuiz();}
+initQuiz();
+</script>
+</body>
+</html>
