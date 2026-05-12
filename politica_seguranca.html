@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 6 - Política de Segurança da Informação</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface-hover:#222633;--border:#2a2e3d;--text:#e4e6ed;--text-muted:#7a7f93;--accent:#55efc4;--accent-glow:rgba(85,239,196,.25);--correct:#00b894;--correct-bg:rgba(0,184,148,.1);--correct-border:rgba(0,184,148,.4);--wrong:#d63031;--wrong-bg:rgba(214,48,49,.1);--wrong-border:rgba(214,48,49,.4);--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.noise{position:fixed;inset:0;z-index:-1;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{max-width:820px;margin:0 auto;padding:24px 20px 100px}
+.header{text-align:center;padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.header h1{font-family:'Space Mono',monospace;font-size:1.5rem;letter-spacing:-.5px;margin-bottom:6px;background:linear-gradient(135deg,#55efc4,#00cec9);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text-muted);font-size:.9rem}
+.progress-bar-container{background:var(--surface);border-radius:100px;height:6px;margin-bottom:12px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#55efc4,#00cec9);border-radius:100px;transition:width .4s ease}
+.progress-info{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:20px}
+.controls-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.score-panel{display:flex;gap:8px}
+.score-chip{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:100px}
+.correct-chip{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.wrong-chip{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+.toggle-label{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted);cursor:pointer}
+.toggle-label input{display:none}
+.toggle-track{width:38px;height:20px;border-radius:100px;background:var(--border);position:relative;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-muted);transition:all .2s}
+.toggle-label input:checked+.toggle-track{background:var(--accent)}
+.toggle-label input:checked+.toggle-track::after{left:20px;background:#0f1117}
+.nav-dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.nav-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s ease}
+.nav-dot:hover{border-color:var(--accent)}
+.nav-dot.active{border-color:var(--accent);background:rgba(85,239,196,.15);color:var(--accent)}
+.nav-dot.answered-correct{border-color:var(--correct-border);background:var(--correct-bg);color:var(--correct)}
+.nav-dot.answered-wrong{border-color:var(--wrong-border);background:var(--wrong-bg);color:var(--wrong)}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;margin-bottom:16px}
+.question-number{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--text-muted);margin-bottom:10px;letter-spacing:.5px}
+.question-text{font-size:.97rem;line-height:1.7;color:var(--text)}
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s ease;font-size:.9rem}
+.option:hover:not(.disabled){border-color:var(--accent);background:rgba(85,239,196,.05)}
+.option.selected{border-color:var(--accent);background:rgba(85,239,196,.1)}
+.option.disabled{cursor:default}
+.option.correct-answer{border-color:var(--correct-border)!important;background:var(--correct-bg)!important;color:var(--correct)}
+.option.wrong-answer{border-color:var(--wrong-border)!important;background:var(--wrong-bg)!important;color:var(--wrong)}
+.letter{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);flex-shrink:0;margin-top:1px}
+.feedback{padding:12px 18px;border-radius:10px;font-size:.88rem;font-weight:500;margin-bottom:16px;animation:fadeIn .25s ease}
+.feedback.correct-fb{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.feedback.wrong-fb{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .15s ease}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#0f1117}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.results-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-top:24px}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px}
+.big-num{font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--accent)}
+.results-card h2{font-size:1.3rem;margin-bottom:8px}
+.results-card p{color:var(--text-muted);margin-bottom:28px}
+.results-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-muted);text-decoration:none;margin-bottom:24px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+@media(max-width:600px){.app{padding:16px 14px 80px}.question-card{padding:20px 16px}.option{padding:12px 14px;font-size:.88rem}.header h1{font-size:1.15rem}.nav-dot{width:28px;height:28px;font-size:.6rem}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+<script>
+const QUESTIONS=[
+  {
+    q:"Um administrador justificou a ausência de monitoramento de acessos dizendo que a política já definia quem podia utilizar cada sistema, tornando dispensáveis registros posteriores. Após o uso indevido de uma conta privilegiada, a empresa não conseguiu reconstruir a sequência de ações nem comprovar quem acessou determinados recursos e em que momento. A revisão da política reforçou que concessão de acesso e observabilidade do uso são dimensões complementares. Qual elemento central havia sido subestimado?",
+    opts:[
+      "A rastreabilidade por meio de logs e auditoria dos acessos e das ações executadas.",
+      "A concessão ampla de acessos para melhorar observabilidade.",
+      "A substituição da política por monitoramento sem diretrizes formais.",
+      "A substituição de logs por planilhas manuais sem validação.",
+      "A restrição do acesso à política apenas aos administradores.",
+      "A eliminação total de contas privilegiadas em qualquer ambiente.",
+      "A adoção exclusiva de segurança física para reduzir uso indevido.",
+      "A remoção de segregação de funções como simplificação.",
+      "A remoção de revisões periódicas para preservar histórico.",
+      "A criação de credenciais compartilhadas para facilitar investigações."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma indústria química, um incidente começou com compartilhamento de credenciais, seguiu com aprovação de acesso sem validação adequada e terminou com clique em link malicioso por um colaborador sem treinamento recente. Um gerente insistia que segurança da informação era responsabilidade exclusiva da TI. A análise posterior mostrou que a falha se espalhou justamente porque outras áreas não se reconheciam como parte do sistema de proteção. Qual alternativa representa corretamente essa visão de responsabilidades?",
+    opts:[
+      "A política deve excluir jurídico e compliance por não operarem sistemas.",
+      "A política deve tratar usuários finais como agentes sem deveres de segurança.",
+      "A política deve distribuir responsabilidades entre gestão, TI, usuários, áreas de apoio e conformidade.",
+      "A política deve remover dos usuários a obrigação de reportar incidentes.",
+      "A política deve limitar obrigações à diretoria e aos auditores externos.",
+      "A política deve responsabilizar apenas quem administra servidores e redes.",
+      "A política deve atribuir todos os eventos apenas ao service desk.",
+      "A política deve reduzir segurança a um assunto exclusivamente tecnológico.",
+      "A política deve concentrar toda a responsabilidade apenas na infraestrutura técnica.",
+      "A política deve dispensar gestores de área de qualquer papel prático."
+    ],
+    answer:2
+  },
+  {
+    q:"A diretoria de uma empresa queria aplicar controles máximos a todos os sistemas, inclusive aos de baixo impacto. A área de segurança alertou para problemas de custo, usabilidade e resistência. Qual princípio resume a posição correta?",
+    opts:[
+      "Controle máximo para tudo, sem exceção.",
+      "Usabilidade não afeta segurança.",
+      "Menor custo sempre acima da segurança.",
+      "Eliminação de controles que gerem esforço.",
+      "Equilíbrio entre proteção, proporcionalidade e viabilidade operacional."
+    ],
+    answer:4
+  },
+  {
+    q:"Um gerente acreditava que bastava publicar a política na intranet para que todos a seguissem automaticamente. A prática mostrou o contrário. Qual conclusão está correta?",
+    opts:[
+      "Treinamento só importa na admissão.",
+      "Cultura de segurança depende de comunicação, treinamento e liderança pelo exemplo.",
+      "Aumentar complexidade de senha resolve tudo.",
+      "A liderança não influencia a aderência.",
+      "A política é autoexecutável após a publicação."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma instituição educacional incluiu em sua política regras sobre tratamento de dados pessoais, base legal e direitos dos titulares. Qual tema foi corretamente incorporado?",
+    opts:[
+      "Tratamento irrestrito de dados por interesse comercial.",
+      "Exclusão do jurídico do processo.",
+      "Dispensa de base legal para uso interno.",
+      "Conformidade com a LGPD e responsabilidade no tratamento de dados.",
+      "Separação total entre segurança e privacidade."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma vulnerabilidade crítica começou a ser explorada, e a empresa descobriu que parte dos seus sistemas não estava no ciclo regular de atualização porque nem constava no inventário. Qual elemento básico precisava ser fortalecido?",
+    opts:[
+      "Inventário atualizado de ativos.",
+      "Corrigir só após incidentes confirmados.",
+      "Atualizar apenas quando o usuário pedir.",
+      "Remover registros de atualização.",
+      "Dispensar homologação em todos os casos."
+    ],
+    answer:0
+  },
+  {
+    q:"Após um incidente causado por compartilhamento de credenciais e clique em link malicioso, a diretoria concluiu que segurança não era responsabilidade exclusiva da TI. O que a política deve fazer nesse caso?",
+    opts:[
+      "Delegar tudo ao fornecedor de software.",
+      "Excluir os usuários da política.",
+      "Concentrar tudo apenas na infraestrutura.",
+      "Definir responsabilidades para gestão, TI, usuários e áreas de apoio.",
+      "Limitar a responsabilidade ao jurídico."
+    ],
+    answer:3
+  },
+  {
+    q:"Durante o mapeamento de ativos, a empresa listou dados de clientes, sistemas, credenciais administrativas, infraestrutura e reputação institucional. Qual alternativa reflete corretamente o conceito de ativo de informação?",
+    opts:[
+      "Ativos excluem credenciais e identidades.",
+      "Ativos são somente softwares licenciados.",
+      "Ativos são apenas equipamentos físicos.",
+      "Ativos incluem elementos tangíveis e intangíveis que afetam a organização.",
+      "Ativos são apenas itens com valor financeiro imediato."
+    ],
+    answer:3
+  },
+  {
+    q:"Durante a preparação para uma certificação, a empresa percebeu que sua política circulava em versões diferentes, sem histórico de mudanças nem responsável formal. Qual prática deveria existir desde o início?",
+    opts:[
+      "Controle de versão com data, histórico e responsável pela aprovação.",
+      "Retirada do documento do portal interno.",
+      "Atualizações sem histórico para simplificar.",
+      "Mudanças apenas verbais.",
+      "Uso de apresentações sem registro formal."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma empresa, cada gestor criava exceções informais para instalação de software e compartilhamento de arquivos. Como a política sozinha não resolvia esse nível de detalhe, o que faltava principalmente?",
+    opts:[
+      "Troca do antivírus corporativo.",
+      "Substituição dos gestores por técnicos de rede.",
+      "Remoção da política.",
+      "Normas específicas que traduzissem a política em requisitos concretos.",
+      "Somente instruções detalhadas de uma tarefa."
+    ],
+    answer:3
+  },
+  {
+    q:"Um diretor perguntou por que não bastava aprovar a política e arquivá-la como referência institucional. A equipe de segurança respondeu que isso não seria suficiente. Qual fase é indispensável após a aprovação formal?",
+    opts:[
+      "Encerrar o tema após a assinatura.",
+      "Revisar apenas em auditorias externas.",
+      "Trocar todas as normas imediatamente.",
+      "Publicação, comunicação, capacitação e monitoramento da adesão.",
+      "Suspender treinamentos para evitar resistência."
+    ],
+    answer:3
+  },
+  {
+    q:"Em uma empresa de serviços, a diretoria queria impor controles máximos a todos os sistemas, inclusive aos de baixo impacto operacional, sem considerar custo, usabilidade ou valor do ativo protegido. A equipe de segurança alertou que a lógica do 'máximo para tudo' pode gerar baixa adesão, improvisos inseguros e desperdício de recursos, sem ganho proporcional. Qual princípio resume corretamente essa decisão do comitê ao reconhecer que a melhor política não é a mais rígida em abstrato, mas a mais coerente com os riscos e o contexto operacional?",
+    opts:[
+      "Uso de política única apenas para ativos de baixo impacto.",
+      "Eliminação de revisões periódicas para manter estabilidade.",
+      "Ideia de que usabilidade não afeta a segurança organizacional.",
+      "Aplicação do controle mais rígido possível a todos os ativos indistintamente.",
+      "Redução da segurança até que não haja fricção operacional.",
+      "Preferência obrigatória por controles manuais em vez de automatizados.",
+      "Remoção de controles sempre que houver qualquer desconforto do usuário.",
+      "Equilíbrio entre proteção efetiva, proporcionalidade dos controles e viabilidade operacional.",
+      "Priorização exclusiva do menor custo, independentemente do risco.",
+      "Substituição da análise de risco por padronização absoluta."
+    ],
+    answer:7
+  },
+  {
+    q:"Em sala de aula, discutiu-se a ideia de que tecnologia sozinha seria suficiente para garantir segurança. O professor explicou que firewalls, logs e autenticação apenas implementam decisões já definidas pela organização. Qual conclusão está correta?",
+    opts:[
+      "Política só é necessária sem controles técnicos.",
+      "Ferramentas substituem treinamento.",
+      "A tecnologia apoia a política, mas não substitui regras e responsabilidades.",
+      "Tecnologia elimina a necessidade de política.",
+      "Firewalls dispensam normas e procedimentos."
+    ],
+    answer:2
+  },
+  {
+    q:"Uma startup decidiu redigir sua política de segurança apenas com a equipe técnica, sem envolver jurídico, RH, áreas de negócio nem liderança executiva. O texto ficou tecnicamente correto, mas ignorava contratos, exigências regulatórias e processos reais. Gestores disseram que as regras eram inviáveis por não refletirem a realidade operacional. Qual lição fica mais evidente?",
+    opts:[
+      "Somente a equipe de TI conhece o suficiente para definir responsabilidades.",
+      "A política é um tema técnico, não de governança.",
+      "A política não precisa refletir a realidade operacional para ser válida.",
+      "A política deve ser elaborada com participação de diferentes partes interessadas da organização.",
+      "A participação das áreas de negócio enfraquece a política e deve ser evitada.",
+      "O RH e o jurídico não têm papel relevante em segurança da informação.",
+      "Requisitos legais podem ser tratados apenas depois da implantação.",
+      "A política deve ser construída exclusivamente por especialistas de infraestrutura.",
+      "Quanto menos áreas opinarem, maior será a aderência à política.",
+      "A diretoria só deve participar após a publicação do texto."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma empresa publicou sua política em um repositório pouco acessível e nunca mais falou sobre o documento com os colaboradores. Em auditoria, muitos disseram não saber onde encontrá-la. O que faltou?",
+    opts:[
+      "Compra de um firewall novo.",
+      "Divulgação clara, treinamento e ciência formal.",
+      "Substituição da política por checklist técnico.",
+      "Eliminação de revisões formais.",
+      "Troca da equipe de RH."
+    ],
+    answer:1
+  },
+  {
+    q:"Durante a preparação para uma certificação, a empresa descobriu que sua política não possuía controle formal de versão, histórico de alterações nem responsável identificado por cada revisão. Circulavam cópias diferentes em áreas distintas, sem clareza sobre qual edição estava vigente. A auditoria apontou isso como falha séria de governança documental. Qual prática deveria ter sido adotada desde o início?",
+    opts:[
+      "Publicação sem número de versão para reduzir burocracia.",
+      "Atualizações sem histórico para manter o texto mais enxuto.",
+      "Troca completa da política a cada auditoria, sem histórico anterior.",
+      "Revisão sem aprovação formal para dar agilidade ao processo.",
+      "Controle de versão com data, histórico de revisão e responsável pela aprovação.",
+      "Armazenamento do documento apenas no e-mail dos gestores.",
+      "Permissão para que cada área adapte livremente sua própria versão.",
+      "Distribuição apenas verbal das mudanças para evitar cópias antigas.",
+      "Substituição do documento por apresentações sem registro formal.",
+      "Remoção da política do portal interno para impedir versões paralelas."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma empresa mantinha inventário incompleto de ativos e, por isso, vários sistemas deixavam de receber atualizações críticas simplesmente porque não estavam visíveis no processo de gestão. Quando uma vulnerabilidade conhecida começou a ser explorada, descobriu-se que parte do ambiente sequer fazia parte do ciclo regular de correção. Na revisão documental, um elemento foi tratado como prioridade estrutural. Qual elemento era esse?",
+    opts:[
+      "Remoção de registros de atualização para acelerar a implantação.",
+      "Uso de janelas de manutenção somente após incidentes confirmados.",
+      "Troca de sistema operacional como única resposta à falta de inventário.",
+      "Dispensa de homologação para qualquer atualização crítica ou não crítica.",
+      "Substituição de atualização por antivírus de última geração.",
+      "Inventário atualizado de ativos para garantir visibilidade e cobertura do processo de correção.",
+      "Aplicação de patches sem saber quais ativos existem no ambiente.",
+      "Aplicação de correções apenas quando o usuário final solicitar.",
+      "Centralização das correções apenas em estações do RH.",
+      "Suspensão do inventário para reduzir burocracia administrativa."
+    ],
+    answer:5
+  },
+  {
+    q:"Depois da fusão entre duas empresas, o novo grupo passou a conviver com critérios diferentes para senhas, gestão de acessos, uso de dispositivos e tratamento da informação. A ausência de uma diretriz unificada gerava retrabalho, exceções informais e alta dependência de interpretações locais. O comitê decidiu criar um documento corporativo capaz de servir de referência central para todas as filiais. Qual benefício principal esse documento traria?",
+    opts:[
+      "Suspensão de auditorias até o término da fusão.",
+      "Transferência integral do risco para fornecedores terceirizados.",
+      "Liberação irrestrita de acessos até a consolidação completa do ambiente.",
+      "Classificação uniforme de toda informação como pública.",
+      "Criação de regras totalmente independentes para cada unidade de negócio.",
+      "Adoção exclusiva de controles físicos como medida provisória.",
+      "Dispensa de treinamento para acelerar a integração das equipes.",
+      "Remoção das responsabilidades dos gestores locais.",
+      "Alinhamento estratégico e redução de inconsistências, lacunas e controles dispersos entre unidades.",
+      "Substituição automática de todas as tecnologias utilizadas pelas filiais."
+    ],
+    answer:8
+  },
+  {
+    q:"Um administrador afirmou que, como a política já definia quem podia acessar cada sistema, não era preciso manter logs detalhados. Após um incidente, a empresa não conseguiu reconstruir a sequência dos fatos. O que estava faltando?",
+    opts:[
+      "Dispensa de revisão de acessos.",
+      "Substituição da política por monitoramento informal.",
+      "Eliminação de contas privilegiadas.",
+      "Uso de credenciais compartilhadas.",
+      "Rastreabilidade por meio de logs e auditoria."
+    ],
+    answer:4
+  },
+  {
+    q:"Em uma organização com equipes híbridas, alguns colaboradores achavam que a política de uso aceitável valia apenas para computadores da sede. Depois de um incidente com notebook corporativo usado em casa, a empresa corrigiu esse entendimento. Qual conclusão está correta?",
+    opts:[
+      "E-mail corporativo fora do escritório dispensa política.",
+      "Monitoramento não pode ser citado.",
+      "Recursos remotos não precisam de regra.",
+      "Uso aceitável se limita à sede.",
+      "A política deve abranger recursos corporativos usados local ou remotamente."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma empresa aprovou formalmente sua política de segurança, mas meses depois não liberou recursos para treinamento, revisão de acessos nem melhorias de controles. Com isso, o documento não teve efeito prático. Qual fator crítico de sucesso estava ausente?",
+    opts:[
+      "Redução do inventário de ativos.",
+      "Troca completa da equipe de TI.",
+      "Substituição de todas as normas.",
+      "Patrocínio efetivo da alta direção.",
+      "Eliminação das auditorias internas."
+    ],
+    answer:3
+  },
+  {
+    q:"Ao preparar o plano de implantação da política, um comitê definiu cronograma, responsáveis, indicadores de adesão, treinamento, comunicação e mecanismos de revisão. Um diretor perguntou por que não bastaria apenas aprovar o documento e arquivá-lo. A equipe de segurança respondeu que a política só gera efeito quando sai do papel e entra em ciclo real de comunicação, internalização, monitoramento e melhoria contínua. Qual fase foi corretamente destacada como indispensável após a aprovação formal?",
+    opts:[
+      "Publicação, comunicação, capacitação e monitoramento da adesão à política.",
+      "Limitação da divulgação à equipe de TI por segurança.",
+      "Armazenamento da política apenas no repositório da auditoria.",
+      "Encerramento do tema após a assinatura da diretoria.",
+      "Adoção de sanções antes de qualquer capacitação ou comunicação.",
+      "Delegação integral da implantação ao fornecedor de tecnologia.",
+      "Remoção de indicadores para reduzir pressão sobre as áreas.",
+      "Revisão apenas quando houver auditoria externa.",
+      "Substituição imediata de todas as normas e procedimentos sem análise.",
+      "Suspensão de treinamentos para evitar resistência inicial."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma auditoria, descobriu-se que a empresa fazia backups regularmente, mas nunca testava a restauração. Quando ocorreu uma falha real, parte das cópias era inútil. Qual princípio havia sido negligenciado?",
+    opts:[
+      "Guardar todos os backups no mesmo local da produção.",
+      "Testar periodicamente a restauração dos backups.",
+      "Eliminar registros de execução.",
+      "Manter retenção indefinida sem critérios.",
+      "Fazer apenas backups manuais."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma empresa percebia que sua política se tornava cada vez mais distante da realidade porque não havia previsão formal de revisão nem critérios de atualização. Qual prática responde melhor a esse problema?",
+    opts:[
+      "Delegar todas as atualizações a fornecedores.",
+      "Fazer ajustes apenas verbais entre gestores.",
+      "Congelar o documento para evitar mudanças.",
+      "Restringir o acesso à política.",
+      "Estabelecer revisão periódica e critérios claros de atualização."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma startup elaborou sua política de segurança apenas com a equipe técnica e sem ouvir jurídico, RH e áreas de negócio. O texto ficou desconectado da realidade operacional. Qual lição esse caso evidencia?",
+    opts:[
+      "Requisitos legais podem ser ignorados.",
+      "A participação de áreas de negócio atrapalha a segurança.",
+      "A política deve envolver diferentes partes interessadas.",
+      "A política não precisa refletir a operação real.",
+      "A política deve ser criada só pela TI."
+    ],
+    answer:2
+  },
+  {
+    q:"Em um processo de concessão de acesso, a equipe de segurança criou um roteiro com etapas como solicitação, aprovação, criação da conta, registro da evidência e validação final. Esse material é usado diariamente para garantir execução padronizada. Como esse documento deve ser classificado?",
+    opts:[
+      "Procedimento operacional.",
+      "Política estratégica.",
+      "Norma institucional.",
+      "Diretriz comercial.",
+      "Declaração de missão."
+    ],
+    answer:0
+  },
+  {
+    q:"Durante a migração para nuvem, alguns gestores acreditavam que a segurança passaria a ser responsabilidade total do provedor. A área de segurança explicou que isso estava errado. Qual noção fundamenta essa resposta?",
+    opts:[
+      "Eliminação de controles de acesso lógico.",
+      "Transferência total da segurança ao provedor.",
+      "Responsabilidade compartilhada entre organização e provedor.",
+      "Substituição da política por cláusulas contratuais genéricas.",
+      "Dispensa de classificação da informação."
+    ],
+    answer:2
+  },
+  {
+    q:"Em um data center, a política tratava bem senhas e acessos lógicos, mas ignorava controle de visitantes e descarte de mídias. Após um incidente, a empresa percebeu a falha. Qual ajuste conceitual era necessário?",
+    opts:[
+      "Substituir gestão de visitantes por antivírus.",
+      "Remover controles físicos do escopo.",
+      "Incluir segurança física e lógica na política.",
+      "Excluir equipamentos do escopo da política.",
+      "Focar apenas em autenticação."
+    ],
+    answer:2
+  },
+  {
+    q:"Uma auditoria encontrou quatro documentos sobre controle de acesso: um texto aprovado pela diretoria com princípios gerais, um documento com requisitos de senha e revisão de privilégios, um fluxo operacional de concessão e revogação, e uma instrução com telas do sistema. Gestores e analistas tratavam política, norma, procedimento e instrução de trabalho como termos equivalentes, gerando sobreposição e conflito de governança. A empresa queria deixar claro que a norma não está no topo da hierarquia, mas também não é o passo a passo mais detalhado do executor. Qual alternativa define corretamente o papel de uma norma?",
+    opts:[
+      "A norma substitui a política e dispensa aprovação da alta direção.",
+      "A norma corresponde ao mesmo nível de uma instrução de trabalho.",
+      "A norma não precisa derivar da política para manter autonomia técnica.",
+      "A norma é um comunicado emergencial sem relação com a política.",
+      "A norma traduz a política em requisitos concretos e obrigatórios para temas específicos.",
+      "A norma é um código individual de ética do colaborador.",
+      "A norma existe exclusivamente para fornecedores externos.",
+      "A norma serve apenas para registrar incidentes encerrados.",
+      "A norma deve ser apenas recomendatória, sem obrigatoriedade.",
+      "A norma é sempre o documento mais detalhado da operação diária."
+    ],
+    answer:4
+  },
+  {
+    q:"Após a incorporação de três empresas menores, uma organização percebeu que cada unidade mantinha critérios próprios para classificação de dados, acesso remoto e uso de serviços em nuvem. Quando um incidente expôs contratos e dados operacionais, constatou-se que não existia um documento corporativo capaz de prevalecer sobre práticas herdadas. O conselho discutiu qual documento deveria ser aprovado no mais alto nível para orientar responsabilidades, princípios e desdobramentos posteriores — sobrevivendo a mudanças tecnológicas e servindo de base para normas e procedimentos. Qual alternativa identifica corretamente esse documento central?",
+    opts:[
+      "O relatório mensal do SOC sobre incidentes.",
+      "A planilha de chamados críticos do service desk.",
+      "A ata da reunião do comitê de crise.",
+      "A instrução de trabalho para troca de senha administrativa.",
+      "O cronograma de manutenção preventiva do data center.",
+      "O inventário patrimonial dos ativos de TI.",
+      "O procedimento de criação de contas no diretório corporativo.",
+      "O manual técnico do fornecedor de firewall.",
+      "A política de segurança da informação corporativa.",
+      "A base de conhecimento do suporte técnico."
+    ],
+    answer:8
+  }
+];
+
+const LETTERS='ABCDEFGHIJ';
+let state={questions:[],current:0,answers:{},revealed:{},shuffle:false,showResults:false};
+
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function initQuiz(){
+  state.questions=state.shuffle?shuffleArray(QUESTIONS.map((_,i)=>i)):QUESTIONS.map((_,i)=>i);
+  state.current=0;state.answers={};state.revealed={};state.showResults=false;render();
+}
+
+function getScore(){
+  let c=0,w=0;
+  for(const idx in state.revealed){const qi=state.questions[idx];if(state.answers[idx]===QUESTIONS[qi].answer)c++;else w++;}
+  return{correct:c,wrong:w,total:QUESTIONS.length};
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const score=getScore();
+  const allRevealed=Object.keys(state.revealed).length===QUESTIONS.length;
+  if(allRevealed&&state.showResults){renderResults(app,score);return;}
+  const qi=state.questions[state.current];
+  const question=QUESTIONS[qi];
+  const selected=state.answers[state.current];
+  const isRevealed=state.revealed[state.current]!==undefined;
+  let html=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>📋 Política de Segurança da Informação — Quiz 6</h1><p>30 questões · Governança, responsabilidades e implantação de política</p></div>
+<div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length/QUESTIONS.length)*100}%"></div></div>
+<div class="progress-info"><span>Questão ${state.current+1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+<div class="controls-row">
+  <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+  <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle?'checked':''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
+</div>
+<div class="nav-dots">${state.questions.map((_,i)=>{
+  let cls='nav-dot';
+  if(i===state.current)cls+=' active';
+  if(state.revealed[i]!==undefined){const ri=state.questions[i];cls+=state.answers[i]===QUESTIONS[ri].answer?' answered-correct':' answered-wrong';}
+  return`<div class="${cls}" onclick="goTo(${i})">${i+1}</div>`;
+}).join('')}</div>
+<div class="question-card"><div class="question-number">Questão ${state.current+1} · (original #${qi+1})</div><div class="question-text">${question.q}</div></div>`;
+  if(isRevealed){
+    const ok=selected===question.answer;
+    html+=`<div class="feedback ${ok?'correct-fb':'wrong-fb'}">${ok?'✓ Correto! Boa!':`✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`;
+  }
+  html+=`<div class="options">`;
+  question.opts.forEach((opt,i)=>{
+    let cls='option';
+    if(isRevealed){cls+=' disabled';if(i===question.answer)cls+=' correct-answer';else if(i===selected&&i!==question.answer)cls+=' wrong-answer';}
+    else{if(i===selected)cls+=' selected';}
+    html+=`<div class="${cls}" ${!isRevealed?`onclick="selectOption(${i})"`:''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html+=`</div><div class="btn-row">`;
+  if(state.current>0)html+=`<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if(!isRevealed)html+=`<button class="btn btn-primary" ${selected===undefined?'disabled':''} onclick="confirm()">Confirmar</button>`;
+  else if(state.current<QUESTIONS.length-1)html+=`<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html+=`<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html+=`</div>`;
+  app.innerHTML=html;
+}
+
+function renderResults(app,score){
+  const pct=Math.round((score.correct/score.total)*100);
+  let msg=pct===100?'Perfeito! 🎉':pct>=80?'Ótimo desempenho! 💪':pct>=60?'Bom, mas dá pra melhorar!':'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>📋 Política de Segurança da Informação — Quiz 6</h1><p>Resultado Final</p></div>
+<div class="results-card">
+  <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+  <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+  <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+</div>`;
+}
+
+function selectOption(i){state.answers[state.current]=i;render();}
+function confirm(){state.revealed[state.current]=true;render();}
+function next(){state.current++;render();window.scrollTo({top:0,behavior:'smooth'});}
+function prev(){state.current--;render();window.scrollTo({top:0,behavior:'smooth'});}
+function goTo(i){state.current=i;render();window.scrollTo({top:0,behavior:'smooth'});}
+function showResults(){state.showResults=true;render();}
+function reviewMode(){state.showResults=false;state.current=0;render();}
+function restart(){state.showResults=false;initQuiz();}
+function toggleShuffle(){state.shuffle=!state.shuffle;initQuiz();}
+initQuiz();
+</script>
+</body>
+</html>

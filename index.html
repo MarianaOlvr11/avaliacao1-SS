@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quizzes — Segurança da Informação</title>
+<title>Segurança da Informação — Quizzes</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0c0d12;
-  --surface: #161820;
-  --surface-hover: #1e2130;
-  --border: #262a3a;
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface-hover: #222633;
+  --border: #2a2e3d;
   --text: #e4e6ed;
-  --text-muted: #6b7084;
+  --text-muted: #7a7f93;
   --radius: 14px;
 }
 
@@ -26,47 +26,21 @@ body {
   line-height: 1.6;
 }
 
-/* subtle grid bg */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  opacity: .035;
-  background-image:
-    linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
-  background-size: 60px 60px;
+.noise {
+  position: fixed; inset: 0; z-index: -1; opacity: .03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-.app {
-  max-width: 740px;
-  margin: 0 auto;
-  padding: 32px 20px 80px;
-}
+.app { max-width: 700px; margin: 0 auto; padding: 32px 20px 80px; }
 
 /* Hero */
-.hero {
-  text-align: center;
-  padding: 56px 0 44px;
-}
-
-.hero-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-  display: block;
-  animation: pulse 3s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-}
-
+.hero { text-align: center; padding: 52px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+.hero-icon { font-size: 3rem; display: block; margin-bottom: 16px; }
 .hero h1 {
   font-family: 'Space Mono', monospace;
-  font-size: 1.75rem;
-  letter-spacing: -1px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -.5px;
   margin-bottom: 10px;
   background: linear-gradient(135deg, #6c5ce7, #a29bfe, #00cec9, #fdcb6e);
   background-size: 300% 300%;
@@ -74,184 +48,76 @@ body::before {
   -webkit-text-fill-color: transparent;
   animation: gradient 8s ease infinite;
 }
-
 @keyframes gradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+.hero p { color: var(--text-muted); font-size: 1rem; max-width: 480px; margin: 0 auto; }
 
-.hero p {
-  color: var(--text-muted);
-  font-size: 1rem;
-  max-width: 480px;
-  margin: 0 auto;
-}
+.stats-row { display: flex; justify-content: center; gap: 24px; margin-top: 24px; }
+.stat { text-align: center; }
+.stat-num { font-family: 'Space Mono', monospace; font-size: 1.5rem; font-weight: 700; color: var(--text); }
+.stat-label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 
-.stats-row {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-top: 24px;
-}
-
-.stat {
-  text-align: center;
-}
-
-.stat-num {
-  font-family: 'Space Mono', monospace;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.stat-label {
-  font-size: .75rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* Cards grid */
-.cards {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 40px;
-}
+/* Cards */
+.cards { display: flex; flex-direction: column; gap: 16px; margin-top: 40px; }
 
 .card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  display: flex; align-items: center; gap: 20px;
   padding: 24px 28px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  text-decoration: none;
-  color: var(--text);
+  text-decoration: none; color: var(--text);
   transition: all .25s ease;
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden;
 }
-
 .card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  border-radius: 4px 0 0 4px;
+  content: ''; position: absolute; top: 0; left: 0;
+  width: 4px; height: 100%; border-radius: 4px 0 0 4px;
   transition: width .25s ease;
 }
+.card:hover { background: var(--surface-hover); border-color: transparent; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+.card:hover::before { width: 6px; }
 
-.card:hover {
-  background: var(--surface-hover);
-  border-color: transparent;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,.3);
-}
-
-.card:hover::before {
-  width: 6px;
-}
-
-/* Color accents per quiz */
 .card[data-quiz="1"]::before { background: #6c5ce7; }
 .card[data-quiz="2"]::before { background: #e17055; }
 .card[data-quiz="3"]::before { background: #00cec9; }
 .card[data-quiz="4"]::before { background: #a29bfe; }
 .card[data-quiz="5"]::before { background: #fdcb6e; }
+.card[data-quiz="6"]::before { background: #55efc4; }
 
 .card[data-quiz="1"]:hover { box-shadow: 0 8px 32px rgba(108,92,231,.15); }
 .card[data-quiz="2"]:hover { box-shadow: 0 8px 32px rgba(225,112,85,.15); }
 .card[data-quiz="3"]:hover { box-shadow: 0 8px 32px rgba(0,206,201,.15); }
 .card[data-quiz="4"]:hover { box-shadow: 0 8px 32px rgba(162,155,254,.15); }
 .card[data-quiz="5"]:hover { box-shadow: 0 8px 32px rgba(253,203,110,.15); }
+.card[data-quiz="6"]:hover { box-shadow: 0 8px 32px rgba(85,239,196,.15); }
 
 .card-icon {
-  font-size: 2rem;
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 2rem; flex-shrink: 0;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
   border-radius: 12px;
   background: rgba(255,255,255,.04);
   border: 1px solid rgba(255,255,255,.06);
 }
-
-.card-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.card-title {
-  font-family: 'Space Mono', monospace;
-  font-size: .85rem;
-  font-weight: 700;
-  letter-spacing: -.2px;
-  margin-bottom: 4px;
-}
-
-.card-desc {
-  font-size: .85rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.card-meta {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
+.card-body { flex: 1; min-width: 0; }
+.card-title { font-family: 'Space Mono', monospace; font-size: .85rem; font-weight: 700; letter-spacing: -.2px; margin-bottom: 4px; }
+.card-desc { font-size: .85rem; color: var(--text-muted); line-height: 1.5; }
+.card-meta { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .card-badge {
-  font-family: 'Space Mono', monospace;
-  font-size: .7rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 100px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.08);
-  color: var(--text-muted);
-  white-space: nowrap;
+  font-family: 'Space Mono', monospace; font-size: .7rem; font-weight: 700;
+  padding: 4px 10px; border-radius: 100px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+  color: var(--text-muted); white-space: nowrap;
 }
-
-.card-arrow {
-  font-size: 1.2rem;
-  color: var(--text-muted);
-  transition: transform .25s ease, color .25s ease;
-}
-
-.card:hover .card-arrow {
-  transform: translateX(4px);
-  color: var(--text);
-}
+.card-arrow { font-size: 1.2rem; color: var(--text-muted); transition: transform .25s ease, color .25s ease; }
+.card:hover .card-arrow { transform: translateX(4px); color: var(--text); }
 
 /* Footer */
-.footer {
-  text-align: center;
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: .8rem;
-}
-
-.footer a {
-  color: #a29bfe;
-  text-decoration: none;
-}
-
-.footer a:hover {
-  text-decoration: underline;
-}
+.footer { text-align: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: .8rem; }
 
 /* Responsive */
 @media (max-width: 600px) {
@@ -268,6 +134,8 @@ body::before {
 </head>
 <body>
 
+<div class="noise"></div>
+
 <div class="app">
   <div class="hero">
     <span class="hero-icon">🛡️</span>
@@ -275,11 +143,11 @@ body::before {
     <p>Questionários interativos para revisão e estudo. Escolha um quiz e teste seus conhecimentos.</p>
     <div class="stats-row">
       <div class="stat">
-        <div class="stat-num">5</div>
+        <div class="stat-num">6</div>
         <div class="stat-label">Quizzes</div>
       </div>
       <div class="stat">
-        <div class="stat-num">150</div>
+        <div class="stat-num">180</div>
         <div class="stat-label">Questões</div>
       </div>
       <div class="stat">
@@ -344,6 +212,18 @@ body::before {
       <div class="card-body">
         <div class="card-title">Quiz 5 — Token e Biometria</div>
         <div class="card-desc">Zero Trust, TOTP, smart cards, FAR/FRR, spoofing biométrico, íris vs retina e gestão de credenciais.</div>
+      </div>
+      <div class="card-meta">
+        <div class="card-badge">30 questões</div>
+        <div class="card-arrow">→</div>
+      </div>
+    </a>
+
+    <a href="politica_seguranca.html" class="card" data-quiz="6">
+      <div class="card-icon">📋</div>
+      <div class="card-body">
+        <div class="card-title">Quiz 6 — Política de Segurança</div>
+        <div class="card-desc">Governança documental, responsabilidades, LGPD, inventário de ativos, rastreabilidade e implantação de política.</div>
       </div>
       <div class="card-meta">
         <div class="card-badge">30 questões</div>
