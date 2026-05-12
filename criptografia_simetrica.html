@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 8 - Criptografia Simétrica</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface-hover:#222633;--border:#2a2e3d;--text:#e4e6ed;--text-muted:#7a7f93;--accent:#e17055;--accent-glow:rgba(225,112,85,.25);--correct:#00b894;--correct-bg:rgba(0,184,148,.1);--correct-border:rgba(0,184,148,.4);--wrong:#d63031;--wrong-bg:rgba(214,48,49,.1);--wrong-border:rgba(214,48,49,.4);--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.noise{position:fixed;inset:0;z-index:-1;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{max-width:820px;margin:0 auto;padding:24px 20px 100px}
+.header{text-align:center;padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.header h1{font-family:'Space Mono',monospace;font-size:1.5rem;letter-spacing:-.5px;margin-bottom:6px;background:linear-gradient(135deg,#e17055,#fdcb6e);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text-muted);font-size:.9rem}
+.progress-bar-container{background:var(--surface);border-radius:100px;height:6px;margin-bottom:12px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#e17055,#fdcb6e);border-radius:100px;transition:width .4s ease}
+.progress-info{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:20px}
+.controls-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.score-panel{display:flex;gap:8px}
+.score-chip{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:100px}
+.correct-chip{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.wrong-chip{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+.toggle-label{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted);cursor:pointer}
+.toggle-label input{display:none}
+.toggle-track{width:38px;height:20px;border-radius:100px;background:var(--border);position:relative;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-muted);transition:all .2s}
+.toggle-label input:checked+.toggle-track{background:var(--accent)}
+.toggle-label input:checked+.toggle-track::after{left:20px;background:#0f1117}
+.nav-dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.nav-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s ease}
+.nav-dot:hover{border-color:var(--accent)}
+.nav-dot.active{border-color:var(--accent);background:rgba(225,112,85,.15);color:var(--accent)}
+.nav-dot.answered-correct{border-color:var(--correct-border);background:var(--correct-bg);color:var(--correct)}
+.nav-dot.answered-wrong{border-color:var(--wrong-border);background:var(--wrong-bg);color:var(--wrong)}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;margin-bottom:16px}
+.question-number{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--text-muted);margin-bottom:10px;letter-spacing:.5px}
+.question-text{font-size:.97rem;line-height:1.7;color:var(--text)}
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s ease;font-size:.9rem}
+.option:hover:not(.disabled){border-color:var(--accent);background:rgba(225,112,85,.05)}
+.option.selected{border-color:var(--accent);background:rgba(225,112,85,.1)}
+.option.disabled{cursor:default}
+.option.correct-answer{border-color:var(--correct-border)!important;background:var(--correct-bg)!important;color:var(--correct)}
+.option.wrong-answer{border-color:var(--wrong-border)!important;background:var(--wrong-bg)!important;color:var(--wrong)}
+.letter{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);flex-shrink:0;margin-top:1px}
+.feedback{padding:12px 18px;border-radius:10px;font-size:.88rem;font-weight:500;margin-bottom:16px;animation:fadeIn .25s ease}
+.feedback.correct-fb{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.feedback.wrong-fb{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .15s ease}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.results-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-top:24px}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px}
+.big-num{font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--accent)}
+.results-card h2{font-size:1.3rem;margin-bottom:8px}
+.results-card p{color:var(--text-muted);margin-bottom:28px}
+.results-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-muted);text-decoration:none;margin-bottom:24px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+@media(max-width:600px){.app{padding:16px 14px 80px}.question-card{padding:20px 16px}.option{padding:12px 14px;font-size:.88rem}.header h1{font-size:1.15rem}.nav-dot{width:28px;height:28px;font-size:.6rem}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+<script>
+const QUESTIONS=[
+  {
+    q:"Em um projeto de armazenamento seguro, a equipe precisava proteger grandes volumes de dados em arquivos, discos e bancos de dados. O arquiteto lembrou que o padrão dominante nesse tipo de cenário trabalha com blocos fixos, múltiplas rodadas de transformação e combinação de confusão e difusão. Qual tipo de cifra corresponde melhor a essa descrição?",
+    opts:[
+      "Função hash unidirecional.",
+      "Troca assimétrica de chaves públicas.",
+      "Cifra de fluxo.",
+      "Cifra de bloco.",
+      "Certificado digital de sessão."
+    ],
+    answer:3
+  },
+  {
+    q:"Durante uma demonstração, o professor alterou apenas um bit do texto claro e mostrou que o resultado cifrado mudava de forma intensa, afetando aproximadamente metade dos bits de saída. Esse comportamento foi descrito como desejável, porque ajuda a esconder padrões e dificulta a análise do atacante. Como se chama esse efeito destacado em aula?",
+    opts:[
+      "Negação implícita.",
+      "Hash reversível.",
+      "Encadeamento público.",
+      "Efeito avalanche.",
+      "Transposição linear."
+    ],
+    answer:3
+  },
+  {
+    q:"Em uma empresa de auditoria digital, a equipe precisou explicar por que a criptografia simétrica não pode ser confundida com função hash nem com criptografia assimétrica. Alguns gestores achavam que qualquer técnica criptográfica serviria igualmente para confidencialidade, integridade e troca segura de chaves. A turma percebeu que misturar esses conceitos compromete tanto a segurança quanto a eficiência da solução. Qual alternativa está tecnicamente correta ao comparar esses mecanismos?",
+    opts:[
+      "Criptografia assimétrica usa uma única chave compartilhada entre emissor e receptor.",
+      "Hash é reversível com a mesma chave e, por isso, substitui a cifra simétrica.",
+      "Hash e cifra simétrica têm exatamente o mesmo objetivo operacional.",
+      "Criptografia simétrica é reversível com a chave correta e tem foco principal em confidencialidade.",
+      "Hash depende de IV e nonce para recuperar o conteúdo original.",
+      "A criptografia assimétrica é sempre mais rápida para grandes volumes de dados.",
+      "Criptografia simétrica substitui totalmente hash, assinatura e troca segura de chaves.",
+      "Criptografia simétrica serve apenas para dados em repouso, nunca em trânsito.",
+      "Quando o algoritmo é forte, o tipo de técnica deixa de importar.",
+      "Criptografia simétrica só existe para complementar controle de acesso."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma empresa de saúde migrou para arquitetura híbrida em nuvem e passou a armazenar exames e laudos em repositórios externos. A diretoria exigiu que os dados permanecessem ilegíveis para terceiros, inclusive para operadores de infraestrutura. O mecanismo adotado usa a mesma chave para proteger e recuperar a informação, com foco principal na confidencialidade. Qual alternativa identifica corretamente o conceito central aplicado nesse cenário?",
+    opts:[
+      "Mascaramento de dados, que substitui cifragem em qualquer tráfego sensível.",
+      "Criptografia simétrica, que protege a confidencialidade com a mesma chave para cifrar e decifrar.",
+      "Controle de acesso, que elimina a necessidade de qualquer cifragem.",
+      "Criptografia assimétrica, em que uma única chave compartilhada é usada nas duas operações.",
+      "Função hash, que permite recuperar o conteúdo original com a mesma entrada.",
+      "Compactação de dados, que torna o conteúdo ilegível sem algoritmo proprietário.",
+      "Ofuscação de código, que garante confidencialidade e integridade do arquivo clínico.",
+      "Tokenização, que sempre permite reconstrução local do conteúdo sem chave.",
+      "Anonimização, que é reversível com a mesma chave secreta compartilhada.",
+      "Assinatura digital, que substitui a necessidade de sigilo do dado."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma equipe reutilizou o mesmo valor auxiliar em várias operações de cifragem, acreditando que isso economizaria tempo e simplificaria o sistema. Depois, o professor mostrou que, em cifras de fluxo, reutilizar o mesmo keystream pode expor o conteúdo das mensagens, e que em CBC repetir IV também permite inferir padrões. Qual conclusão está correta?",
+    opts:[
+      "Reutilizar IV e keystream é aceitável quando a chave tem 256 bits.",
+      "Somente o algoritmo precisa ser único; IV e nonce podem se repetir.",
+      "Repetição de IV afeta apenas desempenho, não confidencialidade.",
+      "IVs, nonces e fluxos de chave devem ser únicos, porque reutilizá-los compromete a segurança.",
+      "IV e nonce são necessários apenas em cifras clássicas."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma startup decidiu guardar chaves criptográficas em arquivos de configuração em texto claro para facilitar o suporte. O auditor apontou que isso anula boa parte da proteção oferecida pelo algoritmo, porque expõe o elemento que realmente precisa permanecer secreto. Na revisão, a empresa passou a discutir HSM, KMS e cofres de segredos. Qual boa prática está sendo aplicada?",
+    opts:[
+      "Publicar a chave em logs para facilitar auditoria.",
+      "Armazenar chaves em ambientes protegidos e com acesso restrito, nunca em texto claro.",
+      "Trocar AES por DES para compensar o armazenamento simples.",
+      "Reutilizar a mesma chave indefinidamente para reduzir complexidade.",
+      "Guardar chaves no código-fonte para garantir disponibilidade."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma equipe de segurança precisava justificar por que uma chave previsível, baseada em datas ou palavras simples, compromete todo o sistema criptográfico, mesmo quando o algoritmo é considerado moderno. O coordenador lembrou que a força da proteção depende da imprevisibilidade e do sigilo desse valor. Qual requisito da chave foi enfatizado como essencial para uso seguro?",
+    opts:[
+      "Ela deve ser idêntica ao texto claro original.",
+      "Ela deve ser curta para acelerar a cifragem.",
+      "Ela deve ser reutilizada em todas as sessões.",
+      "Ela deve ser pública para facilitar auditoria.",
+      "Ela deve ser aleatória, forte e conhecida apenas pelas partes autorizadas."
+    ],
+    answer:4
+  },
+  {
+    q:"Em uma rede de sensores, a equipe precisava proteger dados que chegam continuamente, byte a byte, sem aguardar o preenchimento de blocos completos. O professor explicou que, nesse contexto, um modelo baseado em fluxo pseudoaleatório combinado com XOR tende a ser mais natural e eficiente. Qual tipo de cifra está sendo descrito?",
+    opts:[
+      "Cifra de bloco.",
+      "Função hash.",
+      "Cifra de fluxo.",
+      "Criptografia híbrida.",
+      "Assinatura digital."
+    ],
+    answer:2
+  },
+  {
+    q:"O professor mostrou que o CBC evita o problema central do ECB ao fazer cada bloco depender do resultado cifrado do bloco anterior por meio de XOR antes da nova transformação. Com isso, dois blocos de entrada iguais não precisam produzir a mesma saída, o que ajuda a esconder padrões repetitivos do texto original. Qual alternativa expressa corretamente a principal vantagem do CBC em relação ao ECB?",
+    opts:[
+      "CBC dispensa IV porque o encadeamento já é aleatório por definição.",
+      "CBC resolve sozinho o problema da distribuição segura da chave.",
+      "CBC é inseguro porque processa todos os blocos de forma independente.",
+      "CBC funciona apenas em cifras de fluxo.",
+      "CBC é o modo preferido do TLS 1.3 por autenticação integrada.",
+      "CBC substitui a necessidade de gestão de chaves.",
+      "CBC encadeia os blocos e elimina padrões visíveis causados por repetições de entrada.",
+      "CBC só pode ser usado com chaves menores que 128 bits.",
+      "CBC transforma automaticamente a cifra em função hash.",
+      "CBC torna desnecessário o uso de padding em qualquer caso."
+    ],
+    answer:6
+  },
+  {
+    q:"Em um exercício final, a turma precisava diferenciar criptografia simétrica de função hash e de criptografia assimétrica. O professor relembrou que a cifra simétrica é reversível com a chave correta, o hash é unidirecional e a criptografia assimétrica usa par pública e privada. Qual afirmação está correta?",
+    opts:[
+      "Hash e cifra simétrica produzem saídas sempre do mesmo tamanho.",
+      "Hash é reversível com a mesma chave e serve para confidencialidade.",
+      "Criptografia simétrica é reversível com a chave correta e foca em confidencialidade.",
+      "Criptografia assimétrica usa uma única chave compartilhada entre as partes.",
+      "Criptografia simétrica substitui completamente hash e assinatura digital."
+    ],
+    answer:2
+  },
+  {
+    q:"Um professor apresentou uma tabela com diferentes maneiras de classificar sistemas criptográficos. Na primeira coluna, apareciam métodos que alteram os próprios símbolos, métodos que reorganizam posições e métodos modernos que fazem as duas coisas em múltiplas rodadas. O professor pediu que a turma identificasse corretamente a classificação referente ao tipo de transformação aplicada ao texto. Qual conjunto representa essa classificação por transformação?",
+    opts:[
+      "Nonce, IV e padding.",
+      "Substituição, transposição e combinação.",
+      "Confidencialidade, integridade e disponibilidade.",
+      "AES, RSA e ChaCha20.",
+      "Simétrica, assimétrica e híbrida.",
+      "Bloco, fluxo e sessão.",
+      "Criptografia, mascaramento e compressão.",
+      "Certificados, chaves e algoritmos.",
+      "ECB, CBC e GCM.",
+      "Hash, assinatura e autenticação."
+    ],
+    answer:1
+  },
+  {
+    q:"Em um exercício final, a turma precisava diferenciar criptografia simétrica de função hash e de criptografia assimétrica sem confundir objetivo, reversibilidade e arquitetura de chaves. O professor relembrou que a cifra simétrica busca confidencialidade e é reversível com a chave correta. Já o hash é unidirecional e a criptografia assimétrica usa um par de chaves matematicamente relacionado. Qual alternativa está tecnicamente correta à luz dessa comparação?",
+    opts:[
+      "Hash depende de IV e nonce para funcionar corretamente.",
+      "Criptografia simétrica substitui completamente hash e assinatura digital.",
+      "Hash é reversível com a mesma chave e serve para confidencialidade.",
+      "Criptografia simétrica serve apenas para dados em repouso.",
+      "Criptografia assimétrica usa uma única chave compartilhada entre as partes.",
+      "A simétrica existe apenas para complementar controle de acesso.",
+      "Criptografia assimétrica é sempre mais rápida que a simétrica em grandes volumes.",
+      "Criptografia simétrica é reversível com a chave correta e foca em confidencialidade.",
+      "Hash e cifra assimétrica têm o mesmo objetivo operacional.",
+      "Hash e cifra simétrica produzem saídas sempre do mesmo tamanho."
+    ],
+    answer:7
+  },
+  {
+    q:"Ao explicar por que a criptografia simétrica continua tão usada em sistemas modernos, o professor destacou duas vantagens principais: velocidade de processamento e boa adequação a grandes volumes de dados. Depois, lembrou que ela também possui um desafio importante, que não está na execução do algoritmo em si, mas no uso seguro do segredo compartilhado. Qual é esse desafio?",
+    opts:[
+      "Evitar que o texto claro tenha tamanho variável.",
+      "Distribuir a chave com segurança entre as partes autorizadas.",
+      "Eliminar a necessidade de confidencialidade em trânsito.",
+      "Impedir que o algoritmo seja conhecido publicamente.",
+      "Substituir o uso de modos de operação."
+    ],
+    answer:1
+  },
+  {
+    q:"Em uma atividade sobre gestão de chaves, um administrador sugeriu gerar segredos usando datas, nomes de projeto e padrões fáceis de memorizar. O professor contestou a ideia, argumentando que a força do sistema depende da imprevisibilidade do valor secreto. A discussão evoluiu para a distinção entre qualidade do algoritmo e qualidade da implementação prática. Qual requisito da chave havia sido subestimado pelo administrador?",
+    opts:[
+      "A chave deve repetir padrões fáceis de memorizar para reduzir suporte.",
+      "A chave deve ser forte, aleatória e conhecida apenas pelas partes autorizadas.",
+      "A força da chave não influencia ataques por força bruta.",
+      "A chave deve ser igual ao identificador do sistema para evitar confusão.",
+      "A chave pode ser simples quando o algoritmo for público.",
+      "A chave deve ser pública para facilitar auditoria.",
+      "A chave precisa ser escrita em logs para facilitar recuperação.",
+      "A chave deve ser reutilizada sempre que possível para estabilidade.",
+      "A chave deve ser curta para reduzir latência de cifragem.",
+      "Chaves baseadas em datas são adequadas em ambientes internos."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma empresa de logística decidiu cifrar arquivos com dados de clientes antes de armazená-los em um servidor externo. O gestor sabia que o provedor de hospedagem não deveria conseguir ler o conteúdo caso houvesse acesso físico ou lógico indevido ao disco. A equipe destacou que a técnica é reversível e depende de uma chave secreta compartilhada entre as partes autorizadas. Qual alternativa descreve corretamente essa técnica?",
+    opts:[
+      "Função hash, que permite recuperar o conteúdo com a chave correta.",
+      "Criptografia assimétrica, que sempre usa uma única chave compartilhada.",
+      "Controle de acesso, que substitui a necessidade de cifragem.",
+      "Criptografia simétrica, em que a mesma chave é usada na cifragem e na decifragem.",
+      "Assinatura digital, que cifra e decifra com a mesma chave pública."
+    ],
+    answer:3
+  },
+  {
+    q:"Em uma rede de sensores que envia medições continuamente, a equipe precisava proteger dados à medida que eles chegassem, sem esperar o preenchimento de blocos completos. O professor explicou que alguns algoritmos geram um fluxo pseudoaleatório a partir da chave e de um valor auxiliar, combinando esse fluxo com a mensagem por meio de XOR. O docente alertou que a reutilização do mesmo fluxo ou do mesmo valor auxiliar pode causar vazamento crítico de informação. Que tipo de cifra está sendo descrito?",
+    opts:[
+      "Criptografia híbrida.",
+      "Hash de integridade.",
+      "Compressão autenticada.",
+      "Encadeamento CBC.",
+      "Assinatura digital.",
+      "Certificado TLS.",
+      "Cifra de fluxo.",
+      "Transposição clássica.",
+      "Cifra de bloco.",
+      "Controle de acesso baseado em atributos."
+    ],
+    answer:6
+  },
+  {
+    q:"Depois de mostrar a Cifra de César, o professor perguntou por que ela não basta para proteger informação em sistemas reais. A turma lembrou que há pouquíssimas chaves possíveis, que padrões da língua sobrevivem à cifragem e que a alteração de um caractere afeta apenas a própria posição. Qual alternativa resume corretamente essas fragilidades?",
+    opts:[
+      "Ela é lenta demais para qualquer sistema moderno.",
+      "Ela usa duas chaves públicas e privadas incompatíveis.",
+      "Ela tem espaço de chaves minúsculo, sofre com análise de frequência e não oferece difusão real.",
+      "Ela depende de nonce e IV únicos para funcionar.",
+      "Ela só pode ser aplicada a números, nunca a letras."
+    ],
+    answer:2
+  },
+  {
+    q:"Em uma aula sobre construção de cifras modernas, o professor destacou dois princípios fundamentais: um embaralha a relação entre chave, entrada e saída; o outro espalha a influência de cada bit por todo o texto cifrado. Qual alternativa apresenta essa associação de forma correta?",
+    opts:[
+      "Confusão elimina o uso de blocos; difusão elimina o uso de chaves.",
+      "Confusão espalha padrões; difusão troca a chave por outra secreta.",
+      "Confusão e difusão são sinônimos de autenticação e hash.",
+      "Confusão só existe em cifras de fluxo, e difusão só em hash.",
+      "Confusão embaralha relações entre entrada e chave; difusão espalha a influência dos bits pelo texto cifrado."
+    ],
+    answer:4
+  },
+  {
+    q:"Em uma empresa que usa TLS/HTTPS, o professor explicou que a criptografia assimétrica resolve a troca segura da chave de sessão, mas que a proteção efetiva dos dados trafegados depois disso é feita por outro mecanismo mais eficiente. A aula reforçou que esse arranjo combina o melhor dos dois mundos e é chamado de modelo híbrido. Qual alternativa descreve corretamente esse uso prático?",
+    opts:[
+      "A criptografia assimétrica troca a chave de sessão, e a criptografia simétrica cifra os dados com eficiência.",
+      "A criptografia assimétrica cifra todo o tráfego porque é sempre mais rápida.",
+      "A criptografia simétrica elimina a necessidade de troca de chaves.",
+      "A criptografia simétrica gera certificados, e a assimétrica cifra os arquivos.",
+      "TLS moderno usa apenas hash para confidencialidade."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma organização pública precisava escolher entre duas variantes de um algoritmo moderno já consolidado: uma oferecia excelente equilíbrio entre segurança e desempenho para a maioria dos cenários práticos; a outra era escolhida quando a sensibilidade dos dados e o horizonte de proteção exigiam margem ainda maior. A turma comparou os casos de uso típicos das chaves de 128 e 256 bits. Qual alternativa expressa adequadamente essa relação?",
+    opts:[
+      "AES-256 é sempre mais rápido que AES-128, independentemente do hardware.",
+      "AES-128 está obsoleto e só AES-256 deve ser usado em qualquer contexto.",
+      "AES-128 só serve para tráfego web, nunca para dados em repouso.",
+      "AES-256 dispensa modos de operação como CBC e GCM.",
+      "AES-256 elimina a necessidade de gestão de chaves.",
+      "AES-256 protege apenas integridade, não confidencialidade.",
+      "AES-128 é adequado apenas quando o algoritmo permanece secreto.",
+      "AES-128 só é seguro quando combinado com DES.",
+      "AES-128 já foi quebrado publicamente e não deve mais ser usado.",
+      "AES-128 é recomendado para uso geral; AES-256 é indicado para alta sensibilidade e longo prazo."
+    ],
+    answer:9
+  },
+  {
+    q:"Uma equipe de infraestrutura precisava escolher um modo atual para proteger tráfego de alta vazão e, ao mesmo tempo, obter confidencialidade e autenticação em uma única operação. O professor lembrou que o modo preferido no TLS 1.3 atende exatamente a esses requisitos e exige nonce único a cada operação. Qual modo é esse?",
+    opts:[
+      "ECB.",
+      "Cifra de César.",
+      "GCM.",
+      "Substituição simples.",
+      "DES."
+    ],
+    answer:2
+  },
+  {
+    q:"Durante uma simulação de risco, um professor perguntou o que aconteceria se um atacante interceptasse a chave usada para proteger uma mensagem, ainda que o algoritmo fosse robusto. Os alunos concluíram que, nesse caso, toda a proteção perderia valor prático. A partir disso, o docente reforçou uma exigência operacional importante. Qual é essa exigência?",
+    opts:[
+      "A distribuição da chave pode ser pública se o texto estiver comprimido.",
+      "A distribuição da chave deve ocorrer por um canal seguro e protegido.",
+      "A chave deve ser enviada junto com os dados para simplificar o processo.",
+      "A chave só precisa ser segura quando o arquivo estiver em repouso.",
+      "O algoritmo deve ficar secreto para compensar a chave exposta."
+    ],
+    answer:1
+  },
+  {
+    q:"Durante um laboratório, o professor cifrou uma imagem usando ECB e mostrou que a figura continuava reconhecível em seus contornos principais, apesar de ninguém possuir a chave. A turma percebeu que esse modo processa cada bloco de forma independente e produz a mesma saída sempre que a entrada de um bloco for igual. Isso faz com que padrões estruturais do texto claro sobrevivam ao processo. Qual alternativa resume tecnicamente o defeito principal desse modo de operação?",
+    opts:[
+      "Ele revela padrões estruturais ao produzir saídas iguais para blocos de entrada iguais.",
+      "Ele substitui CBC quando o dado é muito pequeno.",
+      "Ele exige autenticação multifator antes da cifragem.",
+      "Ele protege integridade, mas não confidencialidade.",
+      "Ele só funciona com cifras de fluxo como ChaCha20.",
+      "Ele torna a força bruta impossível mesmo com chaves curtas.",
+      "Ele é inseguro apenas porque usa blocos grandes demais.",
+      "Ele existe somente em algoritmos legados como DES.",
+      "Ele elimina a necessidade de IV por ser mais seguro.",
+      "Ele impede completamente a decifragem do último bloco."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma empresa decidiu adotar um algoritmo conhecido mundialmente para proteger dados financeiros. Alguns funcionários sugeriram manter o algoritmo em segredo para aumentar a segurança, mas o arquiteto explicou que a boa prática moderna exige justamente o contrário: o algoritmo pode ser público, desde que a chave permaneça protegida. Qual princípio está sendo aplicado nessa explicação?",
+    opts:[
+      "Algoritmos públicos nunca são usados em criptografia moderna.",
+      "A cifragem forte elimina a necessidade de chave.",
+      "A segurança deve depender da chave, não do segredo do algoritmo.",
+      "A segurança depende exclusivamente de esconder o algoritmo.",
+      "A chave pode ser pública se o algoritmo for desconhecido."
+    ],
+    answer:2
+  },
+  {
+    q:"Ao comparar alternativas atuais, a equipe de uma empresa precisava escolher entre duas variantes do mesmo padrão moderno: uma mais rápida e suficiente para a maioria dos cenários, e outra mais pesada, indicada para dados extremamente sensíveis e horizontes longos de proteção. Qual alternativa expressa corretamente essa comparação?",
+    opts:[
+      "AES-128 é inseguro porque já foi quebrado publicamente.",
+      "AES-256 é mais rápido que AES-128 em qualquer hardware.",
+      "AES-128 é o padrão recomendado para uso geral; AES-256 é indicado para alta sensibilidade e longo prazo.",
+      "AES-256 só protege integridade, não confidencialidade.",
+      "AES-128 está obsoleto, e apenas AES-256 deve ser usado em qualquer contexto."
+    ],
+    answer:2
+  },
+  {
+    q:"Durante a comparação entre algoritmos antigos e modernos, a turma avaliou o impacto do tamanho da chave no espaço de busca de um ataque de força bruta. O professor repetiu que cada bit adicional dobra o número de combinações possíveis, tornando a busca exponencialmente mais difícil. Com base nisso, qual afirmação está correta?",
+    opts:[
+      "Cada bit adicional dobra o espaço de busca da chave.",
+      "Chaves maiores só melhoram integridade, não confidencialidade.",
+      "O espaço de busca cresce linearmente com o tamanho da chave.",
+      "Cada bit adicional reduz pela metade o esforço de ataque.",
+      "O tamanho da chave não influencia ataques por força bruta."
+    ],
+    answer:0
+  },
+  {
+    q:"Ao comparar ECB e CBC, o professor explicou que o segundo usa XOR com o bloco cifrado anterior antes de proteger o próximo bloco, fazendo com que blocos iguais de entrada resultem em saídas diferentes. Isso ajuda a esconder padrões que seriam visíveis em ECB. Qual alternativa expressa corretamente essa vantagem do CBC?",
+    opts:[
+      "CBC é inseguro porque processa todos os blocos de forma independente.",
+      "CBC transforma automaticamente a cifra em função hash.",
+      "CBC dispensa IV porque o encadeamento já é aleatório por definição.",
+      "CBC encadeia os blocos e elimina padrões visíveis causados por repetições de entrada.",
+      "CBC só pode ser usado com chaves menores que 128 bits."
+    ],
+    answer:3
+  },
+  {
+    q:"Durante uma atividade sobre cifras clássicas, os alunos aplicaram um deslocamento fixo no alfabeto para transformar a palavra 'André' em 'DQGUH'. O professor usou esse exemplo para mostrar uma cifra histórica de substituição simples, importante do ponto de vista didático, mas frágil do ponto de vista de segurança. Qual cifra foi demonstrada?",
+    opts:[
+      "AES em modo CBC.",
+      "Cifra de César.",
+      "Hash SHA-256.",
+      "DES com chave de 56 bits.",
+      "ChaCha20."
+    ],
+    answer:1
+  },
+  {
+    q:"Durante uma simulação de incidente, um analista explicou que a organização havia protegido corretamente um conjunto de documentos, mas falhara ao entregar a chave por um meio inseguro durante a implantação do sistema. A turma concluiu que a segurança não depende só da escolha do algoritmo, mas também da forma como o segredo é gerado, entregue, armazenado e rotacionado. Qual é o requisito operacional que estava no centro do problema descrito?",
+    opts:[
+      "A troca da chave não é desafio operacional em criptografia simétrica.",
+      "Distribuição insegura pode ser compensada com hash adicional.",
+      "A chave deve ser distribuída por um canal seguro, porque sua exposição compromete toda a proteção.",
+      "O algoritmo deve permanecer secreto para compensar distribuição insegura da chave.",
+      "Canais públicos são adequados quando o texto claro já foi apagado.",
+      "Se a chave for de 256 bits, o canal de distribuição deixa de importar.",
+      "A chave pode ser enviada junto com o dado se o arquivo estiver compactado.",
+      "A segurança depende apenas do tamanho do bloco, não da entrega da chave.",
+      "Reutilizar chaves conhecidas é aceitável quando há controle de acesso.",
+      "A distribuição da chave só importa em dados em repouso, não em trânsito."
+    ],
+    answer:2
+  },
+  {
+    q:"Ao falar sobre cifras de fluxo, o professor mostrou a operação XOR como elemento fundamental para combinar a mensagem com um fluxo pseudoaleatório gerado a partir da chave e de um valor auxiliar. Ele destacou que aplicar XOR novamente com a mesma chave de fluxo recupera o valor original. Por que essa operação é especialmente útil em criptografia de fluxo?",
+    opts:[
+      "Porque gera autenticação automaticamente sem custo adicional.",
+      "Porque transforma qualquer cifra de fluxo em cifra assimétrica.",
+      "Porque elimina a necessidade de keystream.",
+      "Porque impede totalmente a reutilização de nonce ou IV.",
+      "Porque é reversível com a mesma chave e combina bits de forma eficiente."
+    ],
+    answer:4
+  }
+];
+
+const LETTERS='ABCDEFGHIJ';
+let state={questions:[],current:0,answers:{},revealed:{},shuffle:false,showResults:false};
+
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function initQuiz(){
+  state.questions=state.shuffle?shuffleArray(QUESTIONS.map((_,i)=>i)):QUESTIONS.map((_,i)=>i);
+  state.current=0;state.answers={};state.revealed={};state.showResults=false;render();
+}
+
+function getScore(){
+  let c=0,w=0;
+  for(const idx in state.revealed){const qi=state.questions[idx];if(state.answers[idx]===QUESTIONS[qi].answer)c++;else w++;}
+  return{correct:c,wrong:w,total:QUESTIONS.length};
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const score=getScore();
+  const allRevealed=Object.keys(state.revealed).length===QUESTIONS.length;
+  if(allRevealed&&state.showResults){renderResults(app,score);return;}
+  const qi=state.questions[state.current];
+  const question=QUESTIONS[qi];
+  const selected=state.answers[state.current];
+  const isRevealed=state.revealed[state.current]!==undefined;
+  let html=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>🔐 Criptografia Simétrica — Quiz 8</h1><p>30 questões · AES, modos de operação, cifras de bloco e fluxo, gestão de chaves</p></div>
+<div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length/QUESTIONS.length)*100}%"></div></div>
+<div class="progress-info"><span>Questão ${state.current+1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+<div class="controls-row">
+  <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+  <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle?'checked':''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
+</div>
+<div class="nav-dots">${state.questions.map((_,i)=>{
+  let cls='nav-dot';
+  if(i===state.current)cls+=' active';
+  if(state.revealed[i]!==undefined){const ri=state.questions[i];cls+=state.answers[i]===QUESTIONS[ri].answer?' answered-correct':' answered-wrong';}
+  return`<div class="${cls}" onclick="goTo(${i})">${i+1}</div>`;
+}).join('')}</div>
+<div class="question-card"><div class="question-number">Questão ${state.current+1} · (original #${qi+1})</div><div class="question-text">${question.q}</div></div>`;
+  if(isRevealed){
+    const ok=selected===question.answer;
+    html+=`<div class="feedback ${ok?'correct-fb':'wrong-fb'}">${ok?'✓ Correto! Boa!':`✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`;
+  }
+  html+=`<div class="options">`;
+  question.opts.forEach((opt,i)=>{
+    let cls='option';
+    if(isRevealed){cls+=' disabled';if(i===question.answer)cls+=' correct-answer';else if(i===selected&&i!==question.answer)cls+=' wrong-answer';}
+    else{if(i===selected)cls+=' selected';}
+    html+=`<div class="${cls}" ${!isRevealed?`onclick="selectOption(${i})"`:''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html+=`</div><div class="btn-row">`;
+  if(state.current>0)html+=`<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if(!isRevealed)html+=`<button class="btn btn-primary" ${selected===undefined?'disabled':''} onclick="confirm()">Confirmar</button>`;
+  else if(state.current<QUESTIONS.length-1)html+=`<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html+=`<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html+=`</div>`;
+  app.innerHTML=html;
+}
+
+function renderResults(app,score){
+  const pct=Math.round((score.correct/score.total)*100);
+  let msg=pct===100?'Perfeito! 🎉':pct>=80?'Ótimo desempenho! 💪':pct>=60?'Bom, mas dá pra melhorar!':'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>🔐 Criptografia Simétrica — Quiz 8</h1><p>Resultado Final</p></div>
+<div class="results-card">
+  <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+  <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+  <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+</div>`;
+}
+
+function selectOption(i){state.answers[state.current]=i;render();}
+function confirm(){state.revealed[state.current]=true;render();}
+function next(){state.current++;render();window.scrollTo({top:0,behavior:'smooth'});}
+function prev(){state.current--;render();window.scrollTo({top:0,behavior:'smooth'});}
+function goTo(i){state.current=i;render();window.scrollTo({top:0,behavior:'smooth'});}
+function showResults(){state.showResults=true;render();}
+function reviewMode(){state.showResults=false;state.current=0;render();}
+function restart(){state.showResults=false;initQuiz();}
+function toggleShuffle(){state.shuffle=!state.shuffle;initQuiz();}
+initQuiz();
+</script>
+</body>
+</html>
