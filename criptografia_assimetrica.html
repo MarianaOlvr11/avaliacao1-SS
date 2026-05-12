@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz 9 - Criptografia Assimétrica</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1117;--surface:#1a1d27;--surface-hover:#222633;--border:#2a2e3d;--text:#e4e6ed;--text-muted:#7a7f93;--accent:#00cec9;--accent-glow:rgba(0,206,201,.25);--correct:#00b894;--correct-bg:rgba(0,184,148,.1);--correct-border:rgba(0,184,148,.4);--wrong:#d63031;--wrong-bg:rgba(214,48,49,.1);--wrong-border:rgba(214,48,49,.4);--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.noise{position:fixed;inset:0;z-index:-1;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{max-width:820px;margin:0 auto;padding:24px 20px 100px}
+.header{text-align:center;padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.header h1{font-family:'Space Mono',monospace;font-size:1.5rem;letter-spacing:-.5px;margin-bottom:6px;background:linear-gradient(135deg,#00cec9,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text-muted);font-size:.9rem}
+.progress-bar-container{background:var(--surface);border-radius:100px;height:6px;margin-bottom:12px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#00cec9,#6c5ce7);border-radius:100px;transition:width .4s ease}
+.progress-info{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:20px}
+.controls-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.score-panel{display:flex;gap:8px}
+.score-chip{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:100px}
+.correct-chip{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.wrong-chip{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+.toggle-label{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted);cursor:pointer}
+.toggle-label input{display:none}
+.toggle-track{width:38px;height:20px;border-radius:100px;background:var(--border);position:relative;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-muted);transition:all .2s}
+.toggle-label input:checked+.toggle-track{background:var(--accent)}
+.toggle-label input:checked+.toggle-track::after{left:20px;background:#0f1117}
+.nav-dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.nav-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s ease}
+.nav-dot:hover{border-color:var(--accent)}
+.nav-dot.active{border-color:var(--accent);background:rgba(0,206,201,.15);color:var(--accent)}
+.nav-dot.answered-correct{border-color:var(--correct-border);background:var(--correct-bg);color:var(--correct)}
+.nav-dot.answered-wrong{border-color:var(--wrong-border);background:var(--wrong-bg);color:var(--wrong)}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;margin-bottom:16px}
+.question-number{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--text-muted);margin-bottom:10px;letter-spacing:.5px}
+.question-text{font-size:.97rem;line-height:1.7;color:var(--text)}
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s ease;font-size:.9rem}
+.option:hover:not(.disabled){border-color:var(--accent);background:rgba(0,206,201,.05)}
+.option.selected{border-color:var(--accent);background:rgba(0,206,201,.1)}
+.option.disabled{cursor:default}
+.option.correct-answer{border-color:var(--correct-border)!important;background:var(--correct-bg)!important;color:var(--correct)}
+.option.wrong-answer{border-color:var(--wrong-border)!important;background:var(--wrong-bg)!important;color:var(--wrong)}
+.letter{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);flex-shrink:0;margin-top:1px}
+.feedback{padding:12px 18px;border-radius:10px;font-size:.88rem;font-weight:500;margin-bottom:16px;animation:fadeIn .25s ease}
+.feedback.correct-fb{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.feedback.wrong-fb{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .15s ease}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#0f1117}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.results-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-top:24px}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px}
+.big-num{font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--accent)}
+.results-card h2{font-size:1.3rem;margin-bottom:8px}
+.results-card p{color:var(--text-muted);margin-bottom:28px}
+.results-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-muted);text-decoration:none;margin-bottom:24px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+@media(max-width:600px){.app{padding:16px 14px 80px}.question-card{padding:20px 16px}.option{padding:12px 14px;font-size:.88rem}.header h1{font-size:1.15rem}.nav-dot{width:28px;height:28px;font-size:.6rem}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app" id="app"></div>
+<script>
+const QUESTIONS=[
+  {
+    q:"Uma empresa de saúde mantinha a chave privada de seu certificado TLS em uma pasta compartilhada para facilitar a administração por diferentes técnicos. O arquivo não tinha controle rigoroso de acesso, e a senha de proteção era conhecida por muitas pessoas. O auditor explicou que essa prática enfraquece a confidencialidade, a autenticidade e o não repúdio. A recomendação incluiu HSM, cofre criptográfico, restrição de acesso, passphrase forte e trilhas de auditoria. Qual boa prática deveria ser adotada?",
+    opts:[
+      "Guardar a chave privada em diretório público com nome difícil de adivinhar.",
+      "Usar a mesma chave privada em todos os ambientes sem segmentação.",
+      "Remover a passphrase para simplificar automações e reduzir chamados.",
+      "Enviar a chave privada por e-mail para todos os administradores autorizados.",
+      "Transformar a chave privada em QR Code impresso na sala de TI.",
+      "Publicar a chave privada junto com o certificado para facilitar validação.",
+      "Permitir cópia local da chave em computadores pessoais dos técnicos.",
+      "Armazenar a chave privada em logs para rastreabilidade total.",
+      "Armazenar a chave privada em HSM ou cofre criptográfico seguro e restringir rigorosamente o acesso.",
+      "Desativar a revogação para evitar indisponibilidade de serviços."
+    ],
+    answer:8
+  },
+  {
+    q:"Um funcionário remoto acessa a rede corporativa por meio de um túnel seguro sobre a internet pública. O serviço usa mecanismos como IPsec, autenticação das partes e acordo de chaves para estabelecer uma sessão protegida. A empresa utiliza esse recurso para acesso remoto e conexão entre filiais. Qual tecnologia está sendo descrita?",
+    opts:[
+      "VPN/IPsec.",
+      "Planilha de controle de acesso.",
+      "Cifra de César.",
+      "Função hash local sem chave.",
+      "Assinatura gov.br."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma empresa queria proteger e-mails contendo informações jurídicas sensíveis. O gerente explicou que o padrão adotado usa certificados digitais para permitir cifragem com a chave pública do destinatário e assinatura com a chave privada do remetente. Dessa forma, o e-mail pode ter confidencialidade, autenticidade e integridade. Qual padrão corresponde a esse uso?",
+    opts:[
+      "S/MIME.",
+      "DHCP.",
+      "DES em modo ECB.",
+      "NAT.",
+      "Telnet."
+    ],
+    answer:0
+  },
+  {
+    q:"Um navegador acessou um site HTTPS e recebeu o certificado X.509 do servidor. Antes de iniciar a sessão segura, verificou o titular, a autoridade emissora, o período de validade e a cadeia de confiança. Depois dessa validação, o handshake negociou uma chave de sessão que seria usada para proteger o tráfego com criptografia simétrica. O professor explicou que a criptografia assimétrica não é escolhida para cifrar todo o volume de dados da sessão por ser mais custosa. Qual descrição representa corretamente esse papel no TLS/HTTPS?",
+    opts:[
+      "Assinar cada pacote IP com a chave pública do cliente.",
+      "Guardar a chave privada do servidor no navegador do usuário.",
+      "Cifrar todo o tráfego da aplicação sozinha durante a sessão inteira.",
+      "Dispensar autoridade certificadora quando o site usa cadeado visual.",
+      "Substituir completamente a criptografia simétrica por ser sempre mais rápida.",
+      "Manter a mesma chave de sessão para todos os usuários indefinidamente.",
+      "Permitir comunicação segura sem cadeia de confiança.",
+      "Autenticar o servidor e viabilizar a negociação segura da chave de sessão.",
+      "Transformar HTTP simples em S/MIME automaticamente.",
+      "Eliminar a necessidade de validar certificados digitais."
+    ],
+    answer:7
+  },
+  {
+    q:"Uma pesquisadora precisava enviar uma proposta sigilosa ao coordenador de um projeto internacional. Ela obteve o certificado do coordenador, validou a identidade associada e usou a chave pública contida nele para cifrar o documento. Nenhum ponto de trânsito deveria conseguir ler a proposta, mesmo tendo acesso ao arquivo cifrado. O coordenador, ao receber o arquivo, utilizou a chave correspondente mantida sob seu controle exclusivo. Quem consegue decifrar corretamente a proposta?",
+    opts:[
+      "O provedor de e-mail, usando o cabeçalho da mensagem e o endereço de origem.",
+      "A pesquisadora, usando novamente a chave pública do coordenador para reverter o processo.",
+      "Qualquer servidor intermediário, desde que possua o certificado público do coordenador.",
+      "Todos os participantes do projeto, porque a chave pública foi disponibilizada.",
+      "Qualquer pessoa que conheça o algoritmo, pois a segurança depende do segredo do método.",
+      "O sistema de DNS, pois ele valida o domínio do destinatário.",
+      "O coordenador, usando sua chave privada correspondente à chave pública usada na cifragem.",
+      "O navegador da pesquisadora, usando automaticamente sua própria chave pública.",
+      "A autoridade certificadora, usando a chave pública que assinou o certificado.",
+      "Um atacante passivo, desde que intercepte também o texto cifrado."
+    ],
+    answer:6
+  },
+  {
+    q:"Uma universidade precisava enviar ao estudante um histórico escolar que somente ele pudesse ler. Ao mesmo tempo, o estudante deveria conseguir provar a terceiros que o documento realmente havia sido emitido pela universidade. A solução deveria combinar confidencialidade e assinatura digital no mesmo fluxo, usando a chave privada da universidade e a chave pública do estudante de forma adequada. Qual combinação atende melhor a esse objetivo?",
+    opts:[
+      "Publicar a chave privada da universidade para que todos validem a autoria.",
+      "Enviar o documento em texto claro, pois o certificado já protege o canal.",
+      "Usar somente compactação com senha enviada no mesmo e-mail.",
+      "Assinar com a chave privada do estudante antes que ele receba o documento.",
+      "Assinar com a chave pública do estudante e cifrar com a chave privada da universidade.",
+      "Cifrar com a chave pública da universidade e assinar com a chave privada do estudante.",
+      "Cifrar com a chave privada do estudante e decifrar com a chave pública da universidade.",
+      "Assinar com a chave privada da universidade e cifrar com a chave pública do estudante.",
+      "Enviar apenas o hash do documento, sem o histórico escolar original.",
+      "Usar apenas uma função hash, pois hash garante sigilo e autoria."
+    ],
+    answer:7
+  },
+  {
+    q:"Uma organização queria estruturar um ambiente de confiança para emissão, distribuição, uso, armazenamento e revogação de certificados digitais. A solução envolveria autoridades certificadoras, autoridades de registro, repositórios, políticas e mecanismos de revogação. Como se chama essa estrutura organizacional e técnica?",
+    opts:[
+      "PKI, ou Infraestrutura de Chave Pública.",
+      "ACL, ou Lista de Controle de Acesso.",
+      "IDS, ou Sistema de Detecção de Intrusão.",
+      "NAT, ou tradução de endereços de rede.",
+      "RAID, ou arranjo redundante de discos."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma empresa queria proteger um grande volume de dados trafegando em uma sessão HTTPS. Um gerente sugeriu usar apenas criptografia assimétrica para cifrar cada pacote. A equipe explicou que, embora a criptografia assimétrica seja essencial no início da comunicação, ela é mais custosa para grandes volumes. Por isso, protocolos modernos usam um modelo híbrido: autenticação e acordo inicial com assimétrica, depois tráfego cifrado com chave simétrica de sessão. Qual descrição está correta?",
+    opts:[
+      "A criptografia simétrica autentica o servidor sem necessidade de certificado.",
+      "A criptografia assimétrica cifra todo o tráfego da sessão por ser sempre mais rápida.",
+      "O modelo híbrido substitui completamente o controle de validade dos certificados.",
+      "O TLS moderno usa apenas hash para confidencialidade do tráfego.",
+      "A chave pública do servidor deve ficar secreta durante todo o handshake.",
+      "A chave privada do servidor é enviada ao cliente para acelerar a sessão.",
+      "A eficiência é obtida por aceitar certificados expirados e reduzir validações.",
+      "O navegador deve ignorar certificados porque a sessão simétrica virá depois.",
+      "A criptografia assimétrica negocia ou protege a chave de sessão, e a simétrica cifra os dados com eficiência.",
+      "A criptografia simétrica elimina a necessidade de qualquer negociação inicial."
+    ],
+    answer:8
+  },
+  {
+    q:"Uma equipe de infraestrutura avaliava um algoritmo clássico de chave pública para uso em assinaturas digitais e cifragem. O professor lembrou que esse algoritmo se baseia na dificuldade computacional de fatorar inteiros grandes. Também destacou que seu uso seguro exige preenchimentos adequados, como OAEP para cifragem e PSS para assinatura. A turma observou que chaves pequenas tornam o sistema vulnerável. Qual algoritmo está sendo descrito?",
+    opts:[
+      "CBC.",
+      "RSA.",
+      "SHA-256.",
+      "ECDSA.",
+      "DSA.",
+      "Ed25519 como cifra de bloco simétrica.",
+      "Diffie-Hellman puro.",
+      "ChaCha20.",
+      "AES-GCM.",
+      "HMAC."
+    ],
+    answer:1
+  },
+  {
+    q:"Durante a correção de trabalhos, um professor anexou uma assinatura digital aos relatórios avaliados. Um aluno recebeu o relatório, recalculou o hash do arquivo e verificou a assinatura usando a chave pública do professor. A ferramenta informou que os dois resumos coincidiam e que o certificado estava válido. O professor explicou que o hash funciona como uma impressão digital do conteúdo — qualquer pequena modificação no relatório produziria um resumo diferente e invalidaria a assinatura. Qual é o papel do hash nesse processo?",
+    opts:[
+      "Substituir a chave privada na geração da assinatura digital.",
+      "Garantir confidencialidade, tornando o documento ilegível para terceiros.",
+      "Transformar a assinatura digital em criptografia simétrica de sessão.",
+      "Vincular a assinatura ao conteúdo de forma eficiente, permitindo detectar alterações no documento.",
+      "Criar automaticamente um túnel VPN para transmissão do relatório.",
+      "Permitir que o destinatário recupere o documento original sem receber o arquivo.",
+      "Eliminar a necessidade de comparar valores durante a verificação.",
+      "Permitir que qualquer alteração no documento mantenha a mesma assinatura válida.",
+      "Impedir que o certificado digital tenha data de expiração.",
+      "Armazenar a chave pública em formato compactado dentro do arquivo."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma equipe de testes instalou um certificado autoassinado em um serviço de homologação e depois copiou a mesma prática para produção. Os navegadores passaram a exibir alertas, mas alguns usuários foram orientados a ignorá-los. O consultor explicou que, em produção, a confiança depende de uma cadeia válida até uma autoridade certificadora reconhecida. Aceitar o alerta sem validação cria condições para ataques de personificação. Qual falha está sendo observada?",
+    opts:[
+      "Cifragem de e-mail com S/MIME corretamente validado.",
+      "Revogação imediata de certificado comprometido.",
+      "Acordo de chaves autenticado sem risco de MitM.",
+      "Sessão simétrica renovada com certificado confiável.",
+      "Uso correto de cadeia de certificação reconhecida.",
+      "Assinatura digital válida com chave privada protegida.",
+      "Uso de autoridade certificadora desconhecida ou não confiável em ambiente que exige cadeia válida.",
+      "Validação completa de período de validade e emissor.",
+      "Uso de HSM para proteger a chave privada.",
+      "Inventário de certificados atualizado e auditado."
+    ],
+    answer:6
+  },
+  {
+    q:"Em uma empresa de engenharia, um gerente assinou digitalmente uma autorização de compra antes de sair em viagem. A preocupação principal era provar que o documento vinha do gerente e detectar qualquer alteração posterior. O sistema calculou um resumo do arquivo e gerou uma assinatura com a chave privada associada ao certificado do gerente. Depois, os destinatários usaram a chave pública correspondente para verificar a assinatura recebida. Uma estagiária confundiu o processo e afirmou que a assinatura servia para esconder o documento. Qual propriedade está sendo obtida principalmente nesse procedimento?",
+    opts:[
+      "Autenticidade e integridade do documento, com apoio ao não repúdio quando a chave privada é protegida.",
+      "Cifragem do documento com a chave pública dos destinatários, sem assinatura.",
+      "Compactação do documento, pois o hash substitui o arquivo original.",
+      "Eliminação da necessidade de validar o certificado do signatário.",
+      "Confidencialidade total do conteúdo, pois assinatura digital torna o texto ilegível.",
+      "Distribuição automática de uma chave simétrica para todos os destinatários.",
+      "Proteção contra indisponibilidade do servidor de arquivos.",
+      "Anonimato do gerente, pois a assinatura oculta a identidade do signatário.",
+      "Revogação permanente de todos os certificados antigos da empresa.",
+      "Conversão do arquivo em imagem para impedir edições futuras."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma empresa, um diretor assinou digitalmente um contrato e depois tentou negar que havia aprovado o documento. A equipe jurídica lembrou que a assinatura foi gerada com a chave privada associada ao certificado do diretor, mantida sob seu controle exclusivo. Embora dependa de proteção adequada da chave, esse mecanismo fortalece uma propriedade importante. Qual propriedade é essa?",
+    opts:[
+      "Troca automática de chaves simétricas.",
+      "Não repúdio.",
+      "Anonimato do signatário.",
+      "Sigilo do conteúdo assinado.",
+      "Compressão jurídica do arquivo."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma organização financeira queria organizar a emissão, validação, distribuição, armazenamento e revogação de certificados digitais. O projeto envolvia autoridades certificadoras, autoridades de registro, repositórios de certificados e listas de revogação. O objetivo era criar um ambiente de confiança em que chaves públicas pudessem ser aceitas com segurança. A equipe explicou que não se tratava apenas de um algoritmo, mas de uma estrutura técnica e organizacional. Como se chama essa estrutura?",
+    opts:[
+      "SSH, ou ferramenta única de emissão de certificados.",
+      "IDS, ou Sistema de Detecção de Intrusão.",
+      "PKI, ou Infraestrutura de Chave Pública.",
+      "RAID, ou arranjo redundante de discos.",
+      "CBC, ou modo de encadeamento simétrico.",
+      "AES, ou cifra simétrica de bloco.",
+      "DHCP, ou distribuição automática de endereços.",
+      "ACL, ou Lista de Controle de Acesso.",
+      "NAT, ou tradução de endereços de rede.",
+      "MFA, ou autenticação multifator isolada."
+    ],
+    answer:2
+  },
+  {
+    q:"Dois servidores precisavam estabelecer uma chave secreta para uma sessão sem transmitir essa chave diretamente pelo canal inseguro. O instrutor escolheu um protocolo que permite que ambas as partes derivem o mesmo segredo a partir de trocas públicas. Ele explicou que o protocolo sozinho não prova a identidade das partes — sem autenticação adicional, um atacante intermediário poderia negociar segredos separados com cada lado. Por isso, em TLS, VPNs e SSH, esse acordo precisa ser combinado a mecanismos de autenticação. Qual protocolo está sendo descrito?",
+    opts:[
+      "SHA-512.",
+      "HMAC.",
+      "Autoridade certificadora raiz.",
+      "ECDSA.",
+      "AES-CTR.",
+      "RSA-PSS.",
+      "DES.",
+      "Diffie-Hellman.",
+      "S/MIME.",
+      "X.509."
+    ],
+    answer:7
+  },
+  {
+    q:"Durante uma revisão conceitual, o professor perguntou quais condições tornam seguro um sistema de chave pública. Os alunos lembraram que gerar o par de chaves precisa ser viável para o usuário legítimo. Por outro lado, derivar a chave privada a partir da chave pública deve ser computacionalmente inviável. Também deve ser inviável decifrar mensagens protegidas sem acesso à chave privada correspondente. Qual alternativa resume corretamente essas condições?",
+    opts:[
+      "A segurança deve depender de esconder completamente o algoritmo usado.",
+      "A fatoração ou o logaritmo discreto devem ser simples para o atacante.",
+      "A mensagem cifrada deve ser decifrável por qualquer autoridade de rede.",
+      "Gerar o par deve ser viável; derivar a chave privada ou quebrar a cifra sem ela deve ser inviável.",
+      "Qualquer pessoa com o texto cifrado deve conseguir confirmar o texto claro.",
+      "O certificado deve armazenar a chave privada para validação pública.",
+      "A chave pública deve permanecer secreta para que o sistema funcione.",
+      "A chave privada deve ser fácil de derivar para permitir recuperação emergencial.",
+      "A chave pública e a privada devem ser iguais para simplificar o processo.",
+      "A assinatura digital deve funcionar sem relação matemática entre as chaves."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma biblioteca universitária criou um cofre digital para receber laudos, contratos e recursos administrativos enviados por estudantes e professores. O sistema publicou uma chave no portal e manteve outra chave em um módulo seguro dentro da infraestrutura. Quando alguém enviava um documento, usava a chave publicada para proteger o conteúdo antes da transmissão. Mesmo que o arquivo fosse interceptado, o conteúdo deveria permanecer inacessível para terceiros. Qual conceito criptográfico está sendo aplicado?",
+    opts:[
+      "Assinatura digital sem certificado, pois todo documento enviado fica automaticamente secreto.",
+      "Cifra de César, pois a chave publicada apenas desloca os caracteres do texto.",
+      "Controle de acesso por papel, sem uso de chaves criptográficas.",
+      "Compactação com senha, pois o objetivo principal é reduzir o tamanho dos arquivos.",
+      "Criptografia assimétrica, com uso de chave pública e chave privada matematicamente relacionadas.",
+      "Autenticação biométrica, pois a proteção depende exclusivamente da identidade física do aluno.",
+      "Espelhamento de arquivos, pois a segurança vem da cópia redundante dos documentos.",
+      "Criptografia simétrica, com uma única chave secreta compartilhada previamente entre todos.",
+      "Lista de controle de acesso de rede, pois a proteção ocorre apenas pelo endereço IP.",
+      "Função hash, pois o conteúdo pode ser recuperado com a chave pública do portal."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma empresa disponibilizou em seu site uma chave para que clientes cifrassem mensagens confidenciais antes de enviá-las ao setor jurídico. O analista explicou que essa chave poderia ser divulgada livremente, pois sua exposição não permitiria decifrar as mensagens protegidas. A chave correspondente, porém, deveria permanecer sob controle exclusivo da empresa. Qual chave pode ser compartilhada publicamente nesse modelo?",
+    opts:[
+      "Senha mestra do servidor.",
+      "Passphrase do cofre criptográfico.",
+      "Chave de sessão simétrica.",
+      "Chave privada.",
+      "Chave pública."
+    ],
+    answer:4
+  },
+  {
+    q:"Dois servidores precisavam estabelecer um segredo compartilhado sem transmitir diretamente esse segredo pelo canal de comunicação. O instrutor explicou que o protocolo escolhido é usado em mecanismos de VPN, TLS e SSH para acordo de chaves, mas, sozinho, não autentica as partes e pode sofrer ataque Man-in-the-Middle. Qual protocolo está sendo descrito?",
+    opts:[
+      "X.509.",
+      "RSA-PSS.",
+      "S/MIME.",
+      "Diffie-Hellman.",
+      "ECDSA."
+    ],
+    answer:3
+  },
+  {
+    q:"André queria enviar a Bob uma mensagem confidencial e solicitou a chave pública do destinatário por um canal não validado. Ricardo interceptou a solicitação, enviou sua própria chave pública e convenceu André de que aquela chave pertencia a Bob. André cifrou a mensagem com a chave falsa, e Ricardo conseguiu decifrá-la. Depois, Ricardo recifrou o conteúdo usando a chave pública verdadeira de Bob e encaminhou a mensagem. Bob recebeu o arquivo e não percebeu que a comunicação havia sido intermediada. Qual ataque está representado nessa situação?",
+    opts:[
+      "Exfiltração por canal lateral de consumo elétrico.",
+      "Spoofing de MAC address sem criptografia assimétrica.",
+      "Reutilização de IV em modo CBC.",
+      "Fragmentação de pacote IPv4 no firewall.",
+      "Ataque por força bruta contra AES-256.",
+      "Colisão de hash em função unidirecional.",
+      "Ataque de dicionário contra senha local de usuário.",
+      "Ataque Man-in-the-Middle por substituição da chave pública.",
+      "Negação de serviço distribuída contra o roteador.",
+      "Falha de compactação em arquivo ZIP."
+    ],
+    answer:7
+  },
+  {
+    q:"Um cidadão usou o serviço de assinatura do gov.br para assinar um documento digital. A identidade do usuário é validada, um certificado associa sua chave pública à sua identidade, um hash do documento é gerado e a assinatura passa a acompanhar o arquivo. Qual afirmação descreve corretamente o papel do certificado nesse processo?",
+    opts:[
+      "Ele substitui a necessidade de hash na assinatura.",
+      "Ele garante que o documento assinado fique automaticamente secreto.",
+      "Ele impede qualquer revogação futura da assinatura.",
+      "Ele vincula a identidade do titular à respectiva chave pública.",
+      "Ele armazena a chave privada em texto claro para consulta pública."
+    ],
+    answer:3
+  },
+  {
+    q:"Uma organização recebeu um certificado X.509 e um funcionário perguntou quais informações normalmente aparecem nele. A equipe de segurança mostrou que o certificado identifica o titular, contém a chave pública associada, informa a autoridade emissora e define um período de validade. O certificado não deve conter a chave privada do titular. Qual conjunto de campos está correto?",
+    opts:[
+      "Titular, chave pública, autoridade emissora, número de série e período de validade.",
+      "Apenas o nome do site, sem chave pública nem autoridade emissora.",
+      "Código-fonte do servidor, banco de dados e certificado revogado.",
+      "Chave privada, senha administrativa, token MFA e logs de acesso.",
+      "Hash reversível, chave simétrica global e passphrase em texto claro.",
+      "Texto claro original, segredo de sessão, IV reutilizado e senha do usuário.",
+      "Arquivo de backup, chave privada da CA e credenciais do navegador.",
+      "Lista de todos os usuários autorizados do domínio.",
+      "Endereço MAC do cliente, senha do Wi-Fi e histórico de navegação.",
+      "Chave privada do titular, chave privada da CA e senha de recuperação."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma empresa com três filiais precisava criar um canal seguro entre redes separadas por internet pública. Os usuários deveriam acessar recursos internos como se estivessem no ambiente corporativo local. A solução criaria um túnel criptografado, autenticaria as partes e usaria protocolos de acordo de chaves para estabelecer material criptográfico de sessão. O professor relacionou esse caso a IPsec e ao papel de mecanismos como IKE. Qual tecnologia está sendo descrita?",
+    opts:[
+      "DNS público sem autenticação.",
+      "Compactação ZIP sem criptografia.",
+      "Função hash local sem chave.",
+      "Certificado X.509 usado sozinho, sem túnel ou protocolo.",
+      "Cifra de César.",
+      "ECB em arquivo de imagem.",
+      "Planilha de controle de acesso.",
+      "VPN/IPsec.",
+      "Assinatura gov.br isolada.",
+      "NAT estático como única medida de confidencialidade."
+    ],
+    answer:7
+  },
+  {
+    q:"Uma empresa recebeu uma proposta assinada digitalmente por uma fornecedora. Dias depois, a fornecedora tentou negar que havia enviado aquela versão do documento. O jurídico verificou que a assinatura estava válida, o certificado identificava a titular e a chave privada deveria estar sob controle exclusivo dela. A equipe de segurança lembrou que essa propriedade depende também da proteção adequada da chave privada. Qual propriedade está sendo reforçada nesse caso?",
+    opts:[
+      "Anonimato absoluto da signatária.",
+      "Não repúdio.",
+      "Sigilo do conteúdo para todos os destinatários.",
+      "Autorização por papel dentro do sistema ERP.",
+      "Compactação jurídica do arquivo assinado.",
+      "Distribuição de chaves simétricas de sessão.",
+      "Bloqueio automático de ataques de negação de serviço.",
+      "Eliminação da necessidade de certificado digital.",
+      "Tradução de endereço de rede.",
+      "Criptografia de disco transparente."
+    ],
+    answer:1
+  },
+  {
+    q:"Durante um incidente em um provedor, descobriu-se que a chave privada de um certificado TLS havia sido copiada. A equipe percebeu que um atacante poderia se passar pelo servidor ou comprometer a confiança em comunicações associadas àquele certificado. O analista de segurança explicou que a resposta correta deveria envolver revogação, geração de novo par de chaves e substituição do certificado. Qual consequência técnica está mais correta?",
+    opts:[
+      "A chave privada exposta afeta apenas disponibilidade, nunca autenticidade.",
+      "O problema é resolvido publicando a chave privada nos logs de auditoria.",
+      "A exposição da chave privada melhora a verificabilidade pública do certificado.",
+      "A autoridade certificadora deixa de ser necessária quando a chave vaza.",
+      "Somente a compressão do tráfego fica comprometida.",
+      "A assinatura digital fica mais forte após a divulgação da chave privada.",
+      "Basta trocar a chave pública, mantendo a mesma chave privada copiada.",
+      "Nenhuma medida é necessária até o certificado expirar naturalmente.",
+      "A exposição da chave privada compromete a confiança e exige revogação e substituição do material criptográfico.",
+      "A exposição da chave privada não importa se a chave pública continuar válida."
+    ],
+    answer:8
+  },
+  {
+    q:"Uma equipe de segurança precisava justificar por que chave pública isolada não prova identidade. O instrutor usou um cenário em que um atacante intercepta a solicitação de chave pública, substitui pela própria chave e se posiciona entre as partes comunicantes, podendo ler e reencaminhar mensagens sem que nenhuma das partes perceba. Qual mecanismo foi criado para mitigar esse risco ao associar identidade a chaves públicas?",
+    opts:[
+      "Uso de IV único em modos de cifra de bloco.",
+      "Certificado digital emitido por autoridade certificadora reconhecida.",
+      "Armazenamento da chave privada em texto claro para auditoria.",
+      "Emprego exclusivo de criptografia simétrica sem troca de chaves.",
+      "Desativação do protocolo TLS em favor de conexão direta."
+    ],
+    answer:1
+  },
+  {
+    q:"Uma empresa escolheu criptografia assimétrica para apoiar a troca inicial de chaves e depois usar comunicação eficiente durante a sessão. Associe cada conceito à descrição correta: (A) Par de chaves; (B) Acordo de chaves; (C) Criptografia simétrica; (D) Criptografia assimétrica; (E) Chave de sessão.",
+    opts:[
+      "A→Usa uma chave compartilhada; B→Usa par relacionado; C→Reúne pública e privada; D→Define segredo sem enviá-lo pronto; E→Protege tráfego após acordo.",
+      "A→Reúne pública e privada; B→Define segredo sem enviá-lo pronto; C→Usa uma chave compartilhada; D→Usa par de chaves relacionadas; E→Protege o tráfego após o acordo.",
+      "A→Protege o tráfego após o acordo; B→Reúne pública e privada; C→Usa par de chaves relacionadas; D→Usa uma chave compartilhada; E→Define segredo sem enviá-lo pronto.",
+      "A→Define segredo sem enviá-lo pronto; B→Protege tráfego após acordo; C→Reúne pública e privada; D→Usa uma chave compartilhada; E→Usa par relacionado.",
+      "A→Usa par de chaves relacionadas; B→Usa uma chave compartilhada; C→Define segredo sem enviá-lo pronto; D→Protege tráfego após acordo; E→Reúne pública e privada."
+    ],
+    answer:1
+  },
+  {
+    q:"A infraestrutura da escola utiliza serviços diferentes para navegação, administração remota, VPN e e-mail protegido. Associe cada tecnologia à sua descrição correta: (A) IKE; (B) SSH; (C) VPN/IPsec; (D) TLS/HTTPS; (E) S/MIME.",
+    opts:[
+      "A→Protege acesso remoto administrativo; B→Gerencia chaves no IPsec; C→Autentica servidor e negocia sessão; D→Cria túnel seguro entre pontos; E→Protege mensagens de e-mail.",
+      "A→Gerencia chaves no IPsec; B→Protege acesso remoto administrativo; C→Cria túnel seguro entre pontos; D→Autentica servidor e negocia sessão; E→Protege mensagens de e-mail.",
+      "A→Cria túnel seguro entre pontos; B→Protege mensagens de e-mail; C→Gerencia chaves no IPsec; D→Protege acesso remoto administrativo; E→Autentica servidor e negocia sessão.",
+      "A→Autentica servidor e negocia sessão; B→Cria túnel seguro entre pontos; C→Protege mensagens de e-mail; D→Gerencia chaves no IPsec; E→Protege acesso remoto administrativo.",
+      "A→Protege mensagens de e-mail; B→Autentica servidor e negocia sessão; C→Protege acesso remoto administrativo; D→Gerencia chaves no IPsec; E→Cria túnel seguro entre pontos."
+    ],
+    answer:1
+  },
+  {
+    q:"Em uma investigação de conexão suspeita, a equipe precisa separar ataque, evidência e mitigação. Associe cada termo à descrição correta: (A) Certificado revogado; (B) Validação rigorosa; (C) Man-in-the-middle; (D) Servidor impostor; (E) Certificado falso.",
+    opts:[
+      "A→Interfere entre as partes; B→Perdeu a confiança anterior; C→Bloqueia certificado inválido; D→Simula identidade confiável; E→Finge ser o serviço real.",
+      "A→Perdeu a confiança anterior; B→Bloqueia certificado inválido; C→Interfere entre as partes; D→Finge ser o serviço real; E→Simula identidade confiável.",
+      "A→Bloqueia certificado inválido; B→Finge ser o serviço real; C→Perdeu a confiança anterior; D→Interfere entre as partes; E→Simula identidade confiável.",
+      "A→Simula identidade confiável; B→Interfere entre as partes; C→Finge ser o serviço real; D→Perdeu a confiança anterior; E→Bloqueia certificado inválido.",
+      "A→Finge ser o serviço real; B→Simula identidade confiável; C→Perdeu a confiança anterior; D→Bloqueia certificado inválido; E→Interfere entre as partes."
+    ],
+    answer:1
+  },
+  {
+    q:"Durante a análise de uma proposta de projeto, a equipe percebeu que o documento havia sido assinado digitalmente mas não cifrado. O conteúdo estava legível para qualquer receptor. A assinatura servia para confirmar autoria e integridade, mas não garantia sigilo. A turma foi solicitada a explicar quando usar assinatura digital, quando usar cifragem assimétrica e quando combinar os dois mecanismos. Qual afirmação está tecnicamente correta?",
+    opts:[
+      "Assinar com chave privada garante sigilo; cifrar com chave pública garante autoria.",
+      "Cifrar com chave pública garante confidencialidade; assinar com chave privada garante autenticidade e integridade.",
+      "Assinar com chave pública e cifrar com chave privada é o fluxo padrão de confidencialidade.",
+      "Cifrar e assinar são operações idênticas que produzem o mesmo resultado.",
+      "Hash substitui cifragem quando o objetivo é confidencialidade."
+    ],
+    answer:1
+  },
+  {
+    q:"Em um sistema de distribuição de software corporativo, os executáveis são acompanhados por um resumo criptográfico assinado pelo fabricante. Antes de instalar o pacote, o sistema operacional verifica se o resumo calculado do arquivo recebido coincide com o resumo decifrado usando a chave pública do fabricante. Se houver divergência, a instalação é bloqueada. Qual objetivo de segurança está sendo atendido por esse mecanismo?",
+    opts:[
+      "Confidencialidade, porque o executável fica cifrado durante o transporte.",
+      "Disponibilidade, porque o mecanismo garante que o arquivo sempre chegue completo.",
+      "Integridade e autenticidade, porque qualquer adulteração no arquivo invalida a verificação.",
+      "Anonimato, porque o fabricante não é identificado durante a instalação.",
+      "Desempenho, porque a assinatura digital reduz o tamanho do executável."
+    ],
+    answer:2
+  }
+];
+
+const LETTERS='ABCDEFGHIJ';
+let state={questions:[],current:0,answers:{},revealed:{},shuffle:false,showResults:false};
+
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function initQuiz(){
+  state.questions=state.shuffle?shuffleArray(QUESTIONS.map((_,i)=>i)):QUESTIONS.map((_,i)=>i);
+  state.current=0;state.answers={};state.revealed={};state.showResults=false;render();
+}
+
+function getScore(){
+  let c=0,w=0;
+  for(const idx in state.revealed){const qi=state.questions[idx];if(state.answers[idx]===QUESTIONS[qi].answer)c++;else w++;}
+  return{correct:c,wrong:w,total:QUESTIONS.length};
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const score=getScore();
+  const allRevealed=Object.keys(state.revealed).length===QUESTIONS.length;
+  if(allRevealed&&state.showResults){renderResults(app,score);return;}
+  const qi=state.questions[state.current];
+  const question=QUESTIONS[qi];
+  const selected=state.answers[state.current];
+  const isRevealed=state.revealed[state.current]!==undefined;
+  let html=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>🗝️ Criptografia Assimétrica — Quiz 9</h1><p>30 questões · RSA, PKI, certificados X.509, assinatura digital, Diffie-Hellman, TLS e S/MIME</p></div>
+<div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length/QUESTIONS.length)*100}%"></div></div>
+<div class="progress-info"><span>Questão ${state.current+1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+<div class="controls-row">
+  <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+  <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle?'checked':''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
+</div>
+<div class="nav-dots">${state.questions.map((_,i)=>{
+  let cls='nav-dot';
+  if(i===state.current)cls+=' active';
+  if(state.revealed[i]!==undefined){const ri=state.questions[i];cls+=state.answers[i]===QUESTIONS[ri].answer?' answered-correct':' answered-wrong';}
+  return`<div class="${cls}" onclick="goTo(${i})">${i+1}</div>`;
+}).join('')}</div>
+<div class="question-card"><div class="question-number">Questão ${state.current+1} · (original #${qi+1})</div><div class="question-text">${question.q}</div></div>`;
+  if(isRevealed){
+    const ok=selected===question.answer;
+    html+=`<div class="feedback ${ok?'correct-fb':'wrong-fb'}">${ok?'✓ Correto! Boa!':`✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`;
+  }
+  html+=`<div class="options">`;
+  question.opts.forEach((opt,i)=>{
+    let cls='option';
+    if(isRevealed){cls+=' disabled';if(i===question.answer)cls+=' correct-answer';else if(i===selected&&i!==question.answer)cls+=' wrong-answer';}
+    else{if(i===selected)cls+=' selected';}
+    html+=`<div class="${cls}" ${!isRevealed?`onclick="selectOption(${i})"`:''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html+=`</div><div class="btn-row">`;
+  if(state.current>0)html+=`<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if(!isRevealed)html+=`<button class="btn btn-primary" ${selected===undefined?'disabled':''} onclick="confirm()">Confirmar</button>`;
+  else if(state.current<QUESTIONS.length-1)html+=`<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html+=`<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html+=`</div>`;
+  app.innerHTML=html;
+}
+
+function renderResults(app,score){
+  const pct=Math.round((score.correct/score.total)*100);
+  let msg=pct===100?'Perfeito! 🎉':pct>=80?'Ótimo desempenho! 💪':pct>=60?'Bom, mas dá pra melhorar!':'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>🗝️ Criptografia Assimétrica — Quiz 9</h1><p>Resultado Final</p></div>
+<div class="results-card">
+  <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+  <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+  <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+</div>`;
+}
+
+function selectOption(i){state.answers[state.current]=i;render();}
+function confirm(){state.revealed[state.current]=true;render();}
+function next(){state.current++;render();window.scrollTo({top:0,behavior:'smooth'});}
+function prev(){state.current--;render();window.scrollTo({top:0,behavior:'smooth'});}
+function goTo(i){state.current=i;render();window.scrollTo({top:0,behavior:'smooth'});}
+function showResults(){state.showResults=true;render();}
+function reviewMode(){state.showResults=false;state.current=0;render();}
+function restart(){state.showResults=false;initQuiz();}
+function toggleShuffle(){state.shuffle=!state.shuffle;initQuiz();}
+initQuiz();
+</script>
+</body>
+</html>
