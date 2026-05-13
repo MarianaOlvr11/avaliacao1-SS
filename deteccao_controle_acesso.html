@@ -3,128 +3,539 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Segurança da Informação — Quizzes</title>
+<title>Quiz 7 - Detecção de Intrusão e Controle de Acesso</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f1117;--surface:#1a1d27;--surface-hover:#222633;--border:#2a2e3d;--text:#e4e6ed;--text-muted:#7a7f93;--radius:14px}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface-hover:#222633;--border:#2a2e3d;--text:#e4e6ed;--text-muted:#7a7f93;--accent:#a29bfe;--accent-glow:rgba(162,155,254,.25);--correct:#00b894;--correct-bg:rgba(0,184,148,.1);--correct-border:rgba(0,184,148,.4);--wrong:#d63031;--wrong-bg:rgba(214,48,49,.1);--wrong-border:rgba(214,48,49,.4);--radius:12px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
 .noise{position:fixed;inset:0;z-index:-1;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-.app{max-width:700px;margin:0 auto;padding:32px 20px 80px}
-.hero{text-align:center;padding:52px 0 40px;border-bottom:1px solid var(--border);margin-bottom:40px}
-.hero-icon{font-size:3rem;display:block;margin-bottom:16px}
-.hero h1{font-family:'Space Mono',monospace;font-size:1.6rem;font-weight:700;letter-spacing:-.5px;margin-bottom:10px;background:linear-gradient(135deg,#6c5ce7,#a29bfe,#00cec9,#fdcb6e);background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:gradient 8s ease infinite}
-@keyframes gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-.hero p{color:var(--text-muted);font-size:1rem;max-width:480px;margin:0 auto}
-.stats-row{display:flex;justify-content:center;gap:24px;margin-top:24px}
-.stat{text-align:center}
-.stat-num{font-family:'Space Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--text)}
-.stat-label{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px}
-.cards{display:flex;flex-direction:column;gap:16px;margin-top:40px}
-.card{display:flex;align-items:center;gap:20px;padding:24px 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:var(--text);transition:all .25s ease;position:relative;overflow:hidden}
-.card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px;transition:width .25s ease}
-.card:hover{background:var(--surface-hover);border-color:transparent;transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
-.card:hover::before{width:6px}
-.card[data-quiz="1"]::before{background:#6c5ce7}
-.card[data-quiz="2"]::before{background:#e17055}
-.card[data-quiz="3"]::before{background:#00cec9}
-.card[data-quiz="4"]::before{background:#a29bfe}
-.card[data-quiz="5"]::before{background:#fdcb6e}
-.card[data-quiz="6"]::before{background:#55efc4}
-.card[data-quiz="7"]::before{background:#fd79a8}
-.card[data-quiz="1"]:hover{box-shadow:0 8px 32px rgba(108,92,231,.15)}
-.card[data-quiz="2"]:hover{box-shadow:0 8px 32px rgba(225,112,85,.15)}
-.card[data-quiz="3"]:hover{box-shadow:0 8px 32px rgba(0,206,201,.15)}
-.card[data-quiz="4"]:hover{box-shadow:0 8px 32px rgba(162,155,254,.15)}
-.card[data-quiz="5"]:hover{box-shadow:0 8px 32px rgba(253,203,110,.15)}
-.card[data-quiz="6"]:hover{box-shadow:0 8px 32px rgba(85,239,196,.15)}
-.card[data-quiz="7"]:hover{box-shadow:0 8px 32px rgba(253,121,168,.15)}
-.card-icon{font-size:2rem;flex-shrink:0;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
-.card-body{flex:1;min-width:0}
-.card-title{font-family:'Space Mono',monospace;font-size:.85rem;font-weight:700;letter-spacing:-.2px;margin-bottom:4px}
-.card-desc{font-size:.85rem;color:var(--text-muted);line-height:1.5}
-.card-meta{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.card-badge{font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:100px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--text-muted);white-space:nowrap}
-.card-arrow{font-size:1.2rem;color:var(--text-muted);transition:transform .25s ease,color .25s ease}
-.card:hover .card-arrow{transform:translateX(4px);color:var(--text)}
-.footer{text-align:center;margin-top:48px;padding-top:24px;border-top:1px solid var(--border);color:var(--text-muted);font-size:.8rem}
-@media(max-width:600px){.app{padding:20px 14px 60px}.hero{padding:36px 0 32px}.hero h1{font-size:1.35rem}.card{padding:18px 16px;gap:14px;flex-wrap:wrap}.card-icon{width:44px;height:44px;font-size:1.5rem}.card-meta{flex-direction:row;align-items:center;width:100%;justify-content:space-between;margin-top:4px;padding-left:58px}.stats-row{gap:16px}.stat-num{font-size:1.2rem}}
+.app{max-width:820px;margin:0 auto;padding:24px 20px 100px}
+.header{text-align:center;padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.header h1{font-family:'Space Mono',monospace;font-size:1.5rem;letter-spacing:-.5px;margin-bottom:6px;background:linear-gradient(135deg,#a29bfe,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text-muted);font-size:.9rem}
+.progress-bar-container{background:var(--surface);border-radius:100px;height:6px;margin-bottom:12px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#a29bfe,#6c5ce7);border-radius:100px;transition:width .4s ease}
+.progress-info{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-muted);margin-bottom:20px}
+.controls-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.score-panel{display:flex;gap:8px}
+.score-chip{font-family:'Space Mono',monospace;font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:100px}
+.correct-chip{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.wrong-chip{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+.toggle-label{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted);cursor:pointer}
+.toggle-label input{display:none}
+.toggle-track{width:38px;height:20px;border-radius:100px;background:var(--border);position:relative;transition:background .2s}
+.toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-muted);transition:all .2s}
+.toggle-label input:checked+.toggle-track{background:var(--accent)}
+.toggle-label input:checked+.toggle-track::after{left:20px;background:#0f1117}
+.nav-dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.nav-dot{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s ease}
+.nav-dot:hover{border-color:var(--accent)}
+.nav-dot.active{border-color:var(--accent);background:rgba(162,155,254,.15);color:var(--accent)}
+.nav-dot.answered-correct{border-color:var(--correct-border);background:var(--correct-bg);color:var(--correct)}
+.nav-dot.answered-wrong{border-color:var(--wrong-border);background:var(--wrong-bg);color:var(--wrong)}
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;margin-bottom:16px}
+.question-number{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--text-muted);margin-bottom:10px;letter-spacing:.5px}
+.question-text{font-size:.97rem;line-height:1.7;color:var(--text)}
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s ease;font-size:.9rem}
+.option:hover:not(.disabled){border-color:var(--accent);background:rgba(162,155,254,.05)}
+.option.selected{border-color:var(--accent);background:rgba(162,155,254,.1)}
+.option.disabled{cursor:default}
+.option.correct-answer{border-color:var(--correct-border)!important;background:var(--correct-bg)!important;color:var(--correct)}
+.option.wrong-answer{border-color:var(--wrong-border)!important;background:var(--wrong-bg)!important;color:var(--wrong)}
+.letter{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);flex-shrink:0;margin-top:1px}
+.feedback{padding:12px 18px;border-radius:10px;font-size:.88rem;font-weight:500;margin-bottom:16px;animation:fadeIn .25s ease}
+.feedback.correct-fb{background:var(--correct-bg);border:1px solid var(--correct-border);color:var(--correct)}
+.feedback.wrong-fb{background:var(--wrong-bg);border:1px solid var(--wrong-border);color:var(--wrong)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:none;cursor:pointer;transition:all .15s ease}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#0f1117}
+.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.results-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:48px 32px;text-align:center;margin-top:24px}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 24px}
+.big-num{font-family:'Space Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--accent)}
+.results-card h2{font-size:1.3rem;margin-bottom:8px}
+.results-card p{color:var(--text-muted);margin-bottom:28px}
+.results-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-muted);text-decoration:none;margin-bottom:24px;transition:color .15s}
+.back-link:hover{color:var(--accent)}
+@media(max-width:600px){.app{padding:16px 14px 80px}.question-card{padding:20px 16px}.option{padding:12px 14px;font-size:.88rem}.header h1{font-size:1.15rem}.nav-dot{width:28px;height:28px;font-size:.6rem}}
 </style>
 </head>
 <body>
 <div class="noise"></div>
-<div class="app">
-  <div class="hero">
-    <span class="hero-icon">🛡️</span>
-    <h1>Segurança da Informação</h1>
-    <p>Questionários interativos para revisão e estudo. Escolha um quiz e teste seus conhecimentos.</p>
-    <div class="stats-row">
-      <div class="stat"><div class="stat-num">7</div><div class="stat-label">Quizzes</div></div>
-      <div class="stat"><div class="stat-num">210</div><div class="stat-label">Questões</div></div>
-      <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Tentativas</div></div>
-    </div>
-  </div>
-  <div class="cards">
-    <a href="conceitos_basicos.html" class="card" data-quiz="1">
-      <div class="card-icon">🔒</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 1 — Conceitos Básicos</div>
-        <div class="card-desc">Tríade CIA, RBAC, privilégio mínimo, mediação completa, continuidade de negócios e análise de risco.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-    <a href="seguranca_computacional.html" class="card" data-quiz="2">
-      <div class="card-icon">🛡️</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 2 — Segurança Computacional</div>
-        <div class="card-desc">Princípios de segurança, ataques passivos, evolução de ameaças, erros de configuração/projeto e APTs.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-    <a href="tipos_de_ataque.html" class="card" data-quiz="3">
-      <div class="card-icon">⚔️</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 3 — Tipos de Ataque</div>
-        <div class="card-desc">DDoS, ransomware, phishing, replay, força bruta, MitM, botnet, backdoor, injeção e SIEM.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-    <a href="autenticacao_user_hash.html" class="card" data-quiz="4">
-      <div class="card-icon">🔑</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 4 — Autenticação e Hash</div>
-        <div class="card-desc">Hash vs criptografia, salt, Argon2id, bcrypt, MFA, credential stuffing, políticas de senha e Hashcat.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-    <a href="autenticacao_token_biometria.html" class="card" data-quiz="5">
-      <div class="card-icon">🔐</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 5 — Token e Biometria</div>
-        <div class="card-desc">Zero Trust, TOTP, smart cards, FAR/FRR, spoofing biométrico, íris vs retina e gestão de credenciais.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-    <a href="politica_seguranca.html" class="card" data-quiz="6">
-      <div class="card-icon">📋</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 6 — Política de Segurança</div>
-        <div class="card-desc">Governança documental, responsabilidades, LGPD, inventário de ativos, rastreabilidade e implantação de política.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-    <a href="deteccao_controle_acesso.html" class="card" data-quiz="7">
-      <div class="card-icon">🔍</div>
-      <div class="card-body">
-        <div class="card-title">Quiz 7 — Detecção de Intrusão e Controle de Acesso</div>
-        <div class="card-desc">DAC, MAC, RBAC, ABAC, ACL padrão/estendida, IDS/IPS, AAA, segregação de funções e ciclo de vida de identidades.</div>
-      </div>
-      <div class="card-meta"><div class="card-badge">30 questões</div><div class="card-arrow">→</div></div>
-    </a>
-  </div>
-  <div class="footer">
-    <p>Feito para revisão de provas · Embaralhe as questões dentro de cada quiz para treinar melhor</p>
-  </div>
+<div class="app" id="app"></div>
+<script>
+const QUESTIONS=[
+  {
+    q:"Em uma área administrativa, o proprietário de uma pasta compartilhada concedia e revogava permissões de leitura e escrita diretamente para colegas, sem passar por aprovação centralizada a cada ajuste. A auditoria mostrou que erros de concessão se propagavam com facilidade, porque um usuário podia repassar permissões além do que deveria. O comitê decidiu manter o modelo em alguns contextos, mas somente com monitoramento e revisão mais rigorosos. Qual modelo descreve melhor essa situação?",
+    opts:[
+      "Segregação de funções, porque o dono do recurso não pode decidir nada.",
+      "MAC, porque o acesso depende exclusivamente de rótulos formais.",
+      "RBAC, porque as permissões sempre pertencem apenas aos papéis.",
+      "ABAC, porque toda decisão é baseada somente em atributos contextuais.",
+      "DAC, porque o proprietário do recurso pode delegar permissões com base na identidade.",
+      "Privilégio mínimo, porque o modelo elimina qualquer possibilidade de delegação.",
+      "802.1X, porque credenciais individuais definem a regra de negócio.",
+      "AAA, porque autenticação e auditoria substituem a autorização.",
+      "IPS, porque o proprietário pode bloquear tráfego automaticamente.",
+      "ACL estendida, porque a decisão ocorre por IP, porta e protocolo."
+    ],
+    answer:4
+  },
+  {
+    q:"Em uma empresa em crescimento acelerado, vários usuários acumulavam permissões antigas após mudanças de função, promoções e transferências internas. Algumas contas ainda mantinham acessos herdados de projetos encerrados, enquanto contas de ex-colaboradores permaneciam ativas por falha no fluxo de desligamento. O comitê concluiu que o problema não estava apenas na autenticação, mas na administração do ciclo completo da identidade. Qual prática de governança foi negligenciada?",
+    opts:[
+      "A revogação de papéis apenas quando houver incidente comprovado.",
+      "A adoção de senhas mais curtas para simplificar o provisionamento.",
+      "A centralização exclusiva do processo no service desk sem RH.",
+      "O uso de ACLs de rede no lugar da gestão de identidades.",
+      "A eliminação da autenticação para usuários internos confiáveis.",
+      "A substituição de contas individuais por contas genéricas compartilhadas.",
+      "O ciclo de vida controlado da identidade, incluindo revisão periódica e revogação oportuna de acessos.",
+      "A concessão de privilégios permanentes para evitar retrabalho administrativo.",
+      "A remoção de logs para reduzir volume de dados.",
+      "A troca de RBAC por DAC em todos os sistemas."
+    ],
+    answer:6
+  },
+  {
+    q:"Uma equipe precisava endurecer a segurança da rede contra pacotes com endereços de origem inválidos e limitar quais serviços realmente deveriam estar expostos. O analista explicou que uma ACL bem planejada pode ajudar a mitigar spoofing básico, restringir portas e protocolos e controlar quem alcança interfaces de gerenciamento. Também reforçou que aplicar regras sem testar ordem, escopo e impacto pode gerar indisponibilidade desnecessária. Qual alternativa descreve corretamente o papel das ACLs?",
+    opts:[
+      "ACLs existem apenas para melhorar desempenho, não segurança.",
+      "ACLs servem apenas para redes sem fio corporativas.",
+      "ACLs eliminam a necessidade de autenticação forte em interfaces de gerência.",
+      "ACLs impedem automaticamente qualquer incidente sem revisão posterior.",
+      "ACLs substituem a política e definem sozinhas o que a organização permite.",
+      "ACLs executam tecnicamente decisões da política, restringindo tráfego e acessos conforme regras definidas.",
+      "ACLs servem apenas para auditoria, e não para filtragem de tráfego.",
+      "ACLs estendidas substituem RBAC e ABAC em qualquer ambiente.",
+      "ACLs tornam inútil o princípio do privilégio mínimo.",
+      "ACLs dispensam o uso de logs e monitoramento."
+    ],
+    answer:5
+  },
+  {
+    q:"Durante a análise de segurança de uma rede, a equipe percebeu várias tentativas repetidas de alcançar um recurso que já era corretamente negado pela política. Embora o controle preventivo funcionasse, o time queria reconhecer o padrão e investigar se havia abuso interno, automação maliciosa ou erro operacional em massa. O instrutor lembrou que prevenção e detecção se complementam. Como IDS e IPS se encaixam nesse cenário?",
+    opts:[
+      "Eles servem apenas para autenticar usuários remotos em redes sem fio.",
+      "Eles substituem totalmente o controle de acesso e a política de segurança.",
+      "Eles definem papéis organizacionais no lugar de RBAC.",
+      "Eles tornam desnecessários logs e auditoria.",
+      "Eles detectam ou bloqueiam desvios da política, complementando os mecanismos preventivos de acesso."
+    ],
+    answer:4
+  },
+  {
+    q:"Durante a revisão de uma política de acesso, o conselho exigiu que o documento respondesse com clareza quem pode acessar quais recursos, em quais condições e com quais permissões. O texto inicial falava genericamente sobre proteção de dados, mas não tratava de várias combinações entre sujeito, objeto e ação. Em certos casos, o sistema não sabia se deveria permitir ou negar, e equipes diferentes tomavam decisões diferentes para situações semelhantes. A auditoria classificou isso como falha grave de desenho. Qual característica estava mais evidentemente ausente?",
+    opts:[
+      "Completude, porque toda combinação relevante de sujeito, objeto e ação deve estar coberta.",
+      "Criptografia ponta a ponta, porque substitui decisões de autorização.",
+      "Delegação irrestrita, porque toda regra pode ser decidida pelo usuário.",
+      "Autenticação biométrica, porque sem ela não existe controle de acesso.",
+      "Segmentação física, porque elimina lacunas lógicas de autorização.",
+      "Disponibilidade de rede, porque toda política depende de redundância.",
+      "Virtualização, porque recursos em nuvem dispensam políticas explícitas.",
+      "Negação implícita, porque qualquer documento completo deve negar tudo.",
+      "Sigilo documental, porque a política não deve ser conhecida pelas áreas.",
+      "Flexibilidade total, porque a política deve permitir improvisação."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma atividade de laboratório, o professor desenhou uma matriz de permissões com usuários nas linhas, recursos nas colunas e ações nas células. Depois, mostrou outra estrutura que reorganizava apenas as entradas preenchidas, evitando redundância ao omitir células vazias. O objetivo era mostrar duas formas de representar autorizações mantendo a mesma lógica de fundo. Como se chama essa segunda forma?",
+    opts:[
+      "Lista de capacidades por objeto.",
+      "ACL padrão.",
+      "Tabela de autorização.",
+      "Plano de auditoria.",
+      "Rótulo mandatório."
+    ],
+    answer:2
+  },
+  {
+    q:"Ao revisar uma ACL, a equipe percebeu que determinados pacotes estavam sendo bloqueados mesmo sem haver uma regra explícita de negação para eles. Um analista novato achou que fosse falha do equipamento, mas o instrutor explicou que isso era esperado quando o tráfego não combinava com nenhuma regra configurada. Que conceito explica esse comportamento?",
+    opts:[
+      "Permissão implícita para todo tráfego não previsto.",
+      "Avaliação aleatória das regras pelo roteador.",
+      "Negação implícita ao final da ACL.",
+      "Prioridade automática da primeira regra de negação.",
+      "Substituição da ACL pelo IDS embutido."
+    ],
+    answer:2
+  },
+  {
+    q:"Em uma auditoria interna, verificou-se que vários colaboradores mantinham privilégios de projetos antigos, apesar de terem mudado de cargo meses antes. Em outro caso, uma conta de ex-funcionário continuava ativa porque ninguém havia executado a revogação após o desligamento. O gerente de segurança explicou que a revisão periódica existe justamente para detectar e corrigir esse tipo de acúmulo antes que ele gere um incidente. Qual boa prática está em jogo?",
+    opts:[
+      "Substituição da auditoria por autenticação multifator.",
+      "Delegação livre entre colegas da mesma equipe.",
+      "Concessão permanente de acesso para evitar retrabalho.",
+      "Revisão periódica de acessos para identificar permissões obsoletas ou excessivas.",
+      "Revogação apenas após confirmação de incidente."
+    ],
+    answer:3
+  },
+  {
+    q:"Durante a preparação de uma auditoria, o administrador precisava responder rapidamente quem podia acessar um determinado arquivo e, em outra consulta, o que um usuário específico conseguia fazer em todo o ambiente. O professor explicou que uma visão organiza permissões por recurso e a outra por identidade. Qual alternativa relaciona corretamente essas duas visões?",
+    opts:[
+      "Capacidades existem apenas em MAC; ACL apenas em DAC.",
+      "As duas estruturas são idênticas e servem ao mesmo propósito.",
+      "ACL registra auditoria; capacidades registram autenticação.",
+      "ACL responde por sujeito; capacidades respondem por objeto.",
+      "ACL responde por objeto quem pode acessar; lista de capacidades responde por sujeito o que ele pode acessar."
+    ],
+    answer:4
+  },
+  {
+    q:"Em uma empresa de jogos digitais, um programador comum conseguiu visualizar tabelas financeiras reservadas à diretoria porque herdou permissões antigas de outro projeto. O incidente não resultou em vazamento, mas mostrou que uma conta aparentemente simples podia alcançar áreas demais do ambiente. O gestor de segurança usou o caso para argumentar que permissões excessivas ampliam o impacto de falhas e aumentam a superfície de ataque. Qual objetivo do controle de acesso está sendo defendido?",
+    opts:[
+      "Garantir que usuários legítimos nunca tenham o acesso negado.",
+      "Substituir a política de segurança por regras de autenticação multifator.",
+      "Permitir que toda conta autenticada tenha acesso administrativo provisório.",
+      "Limitar o raio de ação de identidades para reduzir abuso e impacto de incidentes.",
+      "Eliminar a necessidade de revisar acessos após mudanças de função."
+    ],
+    answer:3
+  },
+  {
+    q:"Em uma repartição que lida com documentos reservados, os arquivos recebem classificações formais, e os usuários só podem acessar aquilo que corresponda à sua credencial. Ninguém pode repassar livremente o próprio nível de acesso, mesmo que conheça pessoalmente outro servidor do mesmo setor. A gestão reconhece que o modelo é menos flexível, mas considera isso aceitável porque a confidencialidade é prioridade. Qual política de acesso está sendo descrita?",
+    opts:[
+      "ABAC, porque somente contexto de horário e localização importa.",
+      "ACL padrão, porque o controle é feito apenas por endereço de origem.",
+      "MAC, pois o acesso depende de rótulos formais e credenciais compatíveis, sem delegação livre.",
+      "RBAC, porque apenas o cargo define todo o acesso.",
+      "DAC, porque o dono do documento delega permissões conforme desejar."
+    ],
+    answer:2
+  },
+  {
+    q:"Em um museu digital, a curadoria queria permitir que pesquisadores visualizassem imagens em alta resolução sem alterar os metadados do acervo, enquanto restauradores precisariam editar descrições e anexar novas versões. Na modelagem do sistema, surgiram direitos como leitura, escrita, criação e remoção, além da possibilidade de busca no catálogo. Qual alternativa apresenta um conjunto coerente de direitos de acesso?",
+    opts:[
+      "Criação só existe em redes sem fio protegidas por 802.1X.",
+      "Busca não pode ser tratada como direito, porque é apenas navegação.",
+      "Execução e remoção pertencem à auditoria, não à autorização.",
+      "Somente leitura e escrita podem ser consideradas direitos de acesso.",
+      "Leitura, escrita, execução, criação, remoção e busca são exemplos válidos de direitos de acesso."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma indústria com milhares de colaboradores cansou de conceder permissões diretamente a cada novo funcionário. Em vez disso, passou a associar direitos de acesso a papéis como operador, supervisor, auditor e gerente, ajustando a conta quando a pessoa mudava de função. O RH passou a comunicar admissões, promoções e desligamentos para sincronizar identidade e papel. Qual modelo de acesso é o melhor encaixe para esse caso?",
+    opts:[
+      "MAC, porque papéis substituem classificação formal.",
+      "AAA, porque autenticação substitui a autorização por papel.",
+      "DAC, porque os próprios usuários escolhem o que delegam.",
+      "ABAC, porque papéis não funcionam em organizações grandes.",
+      "RBAC, porque as permissões são vinculadas a papéis organizacionais e não diretamente a indivíduos."
+    ],
+    answer:4
+  },
+  {
+    q:"Durante a revisão de um processo de pagamento, a auditoria identificou que a mesma pessoa podia solicitar uma transferência, aprová-la, executá-la e posteriormente revisar o próprio registro. O risco de fraude interna foi classificado como elevado. A solução proposta redistribuiu as etapas entre papéis e pessoas distintas, com verificação cruzada. Qual princípio está sendo aplicado nessa correção?",
+    opts:[
+      "Segregação de funções, separando atividades críticas entre pessoas ou papéis distintos.",
+      "ABAC, porque atributos tornam desnecessária a divisão de responsabilidades.",
+      "MAC, porque rótulos formais eliminam conflito de função.",
+      "Delegação discricionária, permitindo autoaprovação em nome da agilidade.",
+      "ACL estendida, porque portas e protocolos resolvem fraude interna.",
+      "Lista de capacidades, que substitui o processo financeiro.",
+      "Negação implícita, impedindo qualquer fluxo de pagamento automático.",
+      "RBAC, porque um único papel deve concentrar todas as etapas.",
+      "Privilégio máximo, para reduzir atrasos operacionais.",
+      "AAA, porque auditoria sozinha compensa a falta de separação."
+    ],
+    answer:0
+  },
+  {
+    q:"Durante a revisão de um processo financeiro, a auditoria constatou que a mesma pessoa podia solicitar, aprovar e executar um pagamento, além de revisar o próprio registro depois. O risco de fraude e erro operacional foi classificado como alto. A organização decidiu redistribuir essas atividades entre perfis diferentes para evitar concentração indevida de poder. Que princípio está sendo aplicado?",
+    opts:[
+      "Lista de capacidades, para substituir o fluxo financeiro.",
+      "Delegação discricionária, para permitir autoaprovação.",
+      "Negação implícita, para impedir qualquer pagamento automático.",
+      "Privilégio máximo, para acelerar o processo.",
+      "Segregação de funções."
+    ],
+    answer:4
+  },
+  {
+    q:"Durante a análise de segurança de uma rede, a equipe percebeu que vários eventos de acesso negado se repetiam contra o mesmo recurso, sugerindo tentativa sistemática de violar a política. O controle de acesso havia impedido a operação indevida, mas o time queria também reconhecer o padrão, gerar investigação e tomar medidas automáticas quando necessário. O instrutor lembrou que prevenção e detecção não competem; elas se reforçam mutuamente. Como IDS e IPS se relacionam com o controle de acesso nesse cenário?",
+    opts:[
+      "Eles definem papéis organizacionais no lugar de RBAC e ABAC.",
+      "Eles eliminam a necessidade de logs e auditoria.",
+      "Eles são úteis apenas depois que o incidente já terminou.",
+      "Eles só funcionam quando a rede não utiliza ACLs.",
+      "Eles servem apenas para autenticar usuários remotos em redes sem fio.",
+      "Eles dispensam a revisão periódica de acessos.",
+      "Eles substituem totalmente o controle de acesso e a política de segurança.",
+      "Eles detectam ou bloqueiam desvios da política, complementando os mecanismos preventivos de acesso.",
+      "Eles tornam desnecessária a autenticação em dois fatores.",
+      "Eles impedem qualquer erro de delegação em DAC."
+    ],
+    answer:7
+  },
+  {
+    q:"Uma professora de segurança cibernética montou um exercício em que um usuário primeiro comprova sua identidade com senha e token, depois recebe permissão apenas para determinados relatórios e, por fim, todas as ações ficam registradas para investigação futura. O objetivo era mostrar, na prática, a integração entre autenticação, autorização e auditoria. Como essa sequência deve ser entendida corretamente?",
+    opts:[
+      "Autenticação valida quem acessa, autorização define o que pode ser feito e auditoria registra o que ocorreu.",
+      "Auditoria substitui autenticação quando existe token.",
+      "Autenticação e autorização são sinônimos dentro do AAA.",
+      "Autorização valida a identidade, autenticação registra ações e auditoria concede permissões.",
+      "AAA elimina a necessidade de revisar acessos periodicamente."
+    ],
+    answer:0
+  },
+  {
+    q:"Num sistema acadêmico, o coordenador precisava aprovar uma política em que professores visualizam e lançam notas, alunos acessam apenas seus próprios registros, e técnicos de suporte administram contas sem ler histórico escolar completo. O desafio era equilibrar funcionalidade, privacidade e rastreabilidade sem conceder mais acesso do que o necessário. O que essa distribuição de direitos demonstra?",
+    opts:[
+      "Papéis diferentes recebem permissões diferentes conforme a função e a necessidade de acesso.",
+      "Todos os usuários devem ter privilégios equivalentes para evitar bloqueios operacionais.",
+      "A área acadêmica deve gerenciar permissões de infraestrutura diretamente.",
+      "Alunos devem poder editar dados de matrícula para corrigir inconsistências.",
+      "O suporte técnico precisa de acesso irrestrito a qualquer conteúdo sensível."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma rede sem fio corporativa, o administrador percebeu que conhecer o SSID e associar-se ao ponto de acesso não representava uma forma confiável de controle de acesso. A empresa ainda utilizava uma senha compartilhada entre equipes, o que dificultava auditoria, revogação individual e rastreabilidade. A equipe queria adotar os mesmos princípios de autenticação, autorização e auditoria já valorizados na rede cabeada. Qual solução está mais alinhada a esse cenário?",
+    opts:[
+      "Substituição completa da WLAN por ACL padrão de roteador.",
+      "Segregação de VLANs sem autenticação, porque isso já resolve o risco.",
+      "Bloqueio por endereço MAC como solução suficiente para ambiente corporativo.",
+      "Uso de SSID oculto como mecanismo principal de segurança.",
+      "Liberação irrestrita da rede interna a qualquer dispositivo associado.",
+      "Eliminação de AAA da rede sem fio para reduzir custo operacional.",
+      "Desativação da auditoria do Wi-Fi para ganhar desempenho.",
+      "Adoção de uma senha por departamento, mas sem identidade individual.",
+      "Uso de uma única senha compartilhada para toda a equipe, por simplicidade.",
+      "Autenticação forte com 802.1X e RADIUS, usando credenciais individuais."
+    ],
+    answer:9
+  },
+  {
+    q:"Numa empresa de engenharia, um colaborador entrou como analista, depois passou a supervisor e, durante alguns meses, acumulou um papel adicional para um projeto estratégico. Quando foi desligado, todos os papéis foram removidos de forma centralizada. O gestor usou o caso para explicar que acesso não deve ficar preso à pessoa, mas à função exercida em cada momento. O que esse exemplo demonstra sobre o RBAC?",
+    opts:[
+      "Papéis temporários devem ser evitados, mesmo quando necessários.",
+      "Papéis são permanentes e não devem mudar após a admissão.",
+      "RBAC exige permissões sempre atribuídas diretamente ao usuário.",
+      "Desligamento não exige remoção de papel se a conta for bloqueada.",
+      "Papéis podem ser atribuídos, acumulados, revogados e ajustados conforme a função e a responsabilidade."
+    ],
+    answer:4
+  },
+  {
+    q:"Uma equipe de segurança precisava explicar a novos analistas a diferença entre autenticação, autorização e auditoria usando um caso prático. Um usuário se identificava no sistema por meio de senha e token, depois recebia permissão para consultar apenas determinados relatórios e, por fim, todas as ações executadas eram registradas para investigação futura. O instrutor mostrou que os três elementos são complementares e formam uma base essencial da governança de acesso. Qual alternativa descreve corretamente essa sequência?",
+    opts:[
+      "Autenticação valida quem acessa, autorização define o que pode ser feito e auditoria registra o que ocorreu.",
+      "Auditoria torna desnecessário o privilégio mínimo.",
+      "Autenticação decide se o log será mantido ou apagado.",
+      "Auditoria substitui autenticação quando o sistema usa token.",
+      "Auditoria concede permissões temporárias após autenticação.",
+      "AAA elimina a necessidade de revisão de acessos.",
+      "Autorização sempre ocorre antes da autenticação do usuário.",
+      "AAA só existe em redes sem fio com RADIUS.",
+      "Autorização valida identidade, autenticação registra ações e auditoria concede permissões.",
+      "Autenticação e autorização são sinônimos práticos do AAA."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma empresa de arquitetura percebeu que algumas solicitações de acesso resultavam em decisões diferentes dependendo do sistema consultado. Em um módulo, o acesso era permitido; em outro, a mesma combinação de usuário, recurso e ação gerava bloqueio. Ao analisar a política, a equipe viu que havia lacunas: certos casos simplesmente não tinham regra definida. Qual problema conceitual isso revela?",
+    opts:[
+      "A política era inválida porque registrava as decisões em logs.",
+      "A política deixava de ser válida por usar horário como condição.",
+      "A política não era completa, pois deixava combinações relevantes sem tratamento definido.",
+      "A política estava errada por permitir leitura sem escrita.",
+      "A política falhava por usar o princípio do privilégio mínimo."
+    ],
+    answer:2
+  },
+  {
+    q:"Em uma seguradora, o acesso ao painel de sinistros críticos foi redesenhado para exigir papel correto, autenticação multifator, dispositivo corporativo e conexão por VPN. A equipe concluiu que apenas usar cargos ou grupos não expressava suficientemente bem a decisão pretendida. Era preciso combinar características do sujeito, do recurso e do contexto. Qual modelo representa melhor esse tipo de política?",
+    opts:[
+      "ACL padrão, porque o IP de origem é suficiente para a decisão.",
+      "MAC, porque somente rótulos formais são relevantes para o caso.",
+      "DAC, porque o proprietário do sistema decide manualmente cada acesso.",
+      "RBAC, porque papéis fixos resolvem integralmente qualquer cenário contextual.",
+      "ABAC, porque a decisão combina atributos do sujeito, do objeto e do contexto."
+    ],
+    answer:4
+  },
+  {
+    q:"Durante uma aula prática, um aluno afirmou que o documento era o sujeito porque 'participa do processo', enquanto o usuário seria o objeto porque 'aparece na tela'. O professor então pediu que a turma voltasse ao conceito fundamental de controle de acesso: quem age e sobre o que a ação recai. Qual definição está correta?",
+    opts:[
+      "Sujeito e objeto se confundem quando existe autenticação forte.",
+      "O objeto decide o acesso, e o sujeito apenas armazena informação.",
+      "O sujeito é a entidade ativa que executa a ação, e o objeto é o recurso passivo sobre o qual ela ocorre.",
+      "O sujeito é sempre o arquivo, e o objeto é sempre o usuário.",
+      "A distinção entre sujeito e objeto só existe em redes cabeadas."
+    ],
+    answer:2
+  },
+  {
+    q:"Em um roteador de borda, a equipe precisava aplicar uma restrição simples, baseada principalmente no endereço IPv4 de origem, para limitar determinado tráfego antes de chegar a um servidor específico. O engenheiro explicou que esse tipo de filtragem é menos granular do que aquela baseada em protocolo e porta, mas continua útil em cenários de controle direto de origem. Que tipo de ACL está sendo descrito?",
+    opts:[
+      "Lista de capacidades por sujeito.",
+      "ACL estendida.",
+      "ACL por objeto.",
+      "IPS baseado em assinatura.",
+      "Filtro de papéis organizacionais.",
+      "Rótulo mandatório de segurança.",
+      "ABAC contextual em camada 7.",
+      "ACL padrão.",
+      "RBAC aplicado em rede.",
+      "Tabela de autorização relacional."
+    ],
+    answer:7
+  },
+  {
+    q:"Na semana de abertura de um novo laboratório de inovação, a coordenação decidiu liberar acesso amplo aos repositórios de projetos para evitar atrasos entre as equipes. Dois dias depois, um estagiário alterou por engano um arquivo crítico de um grupo que não era o seu. Na reunião seguinte, o professor responsável lembrou que colaboração não significa ausência de regra. Considerando essa situação, qual é a principal razão para o controle de acesso ser tratado como tema central de segurança?",
+    opts:[
+      "Porque ele garante que recursos importantes sejam acessados apenas por quem possui direito legítimo.",
+      "Porque ele elimina a possibilidade de erro por usuários autorizados.",
+      "Porque ele torna desnecessária a auditoria das ações executadas.",
+      "Porque ele substitui a necessidade de autenticação dos usuários.",
+      "Porque ele restringe o uso de qualquer recurso apenas a administradores."
+    ],
+    answer:0
+  },
+  {
+    q:"Em um roteador, a equipe configurou uma lista de controle de acesso que filtrava principalmente pelo endereço IPv4 de origem. O objetivo era aplicar uma restrição simples e com pouco impacto de processamento, adequada para um caso específico. O instrutor aproveitou para comparar esse tipo de ACL com outra mais detalhada, capaz de avaliar destino, protocolo e porta. Que tipo de ACL estava sendo usado nesse caso?",
+    opts:[
+      "ACL padrão.",
+      "RBAC aplicado à camada de rede.",
+      "ACL estendida.",
+      "Lista de capacidades por sujeito.",
+      "ABAC contextual."
+    ],
+    answer:0
+  },
+  {
+    q:"Em uma organização madura, a diretoria começou a questionar como saber se a política estava sendo realmente seguida e se os controles derivados estavam produzindo resultado. A área de segurança explicou que não bastava confiar em percepção subjetiva. Foram discutidos indicadores como percentual de treinamento concluído, revisão de acessos em dia, tempo de revogação após desligamento, cobertura de inventário e conformidade em auditorias internas. Qual elemento a política deve prever para sustentar esse acompanhamento?",
+    opts:[
+      "Indicadores e mecanismos de monitoramento para avaliar aderência e eficácia da política.",
+      "Mensuração somente da compra de ferramentas, e não de processos ou comportamento.",
+      "Uso de indicadores apenas financeiros, sem relação com segurança.",
+      "Substituição de indicadores por revisão eventual após auditoria externa.",
+      "Apenas confiança na percepção dos gestores, sem dados objetivos.",
+      "Medição exclusiva do número de incidentes divulgados na imprensa.",
+      "Monitoramento restrito à TI, sem visibilidade para a governança.",
+      "Adoção de métricas informais não documentadas na política.",
+      "Eliminação de métricas para evitar pressão sobre as áreas.",
+      "Coleta de dados sem responsáveis definidos pela análise dos resultados."
+    ],
+    answer:0
+  },
+  {
+    q:"Uma auditoria encontrou contas de ex-colaboradores ainda ativas, permissões excessivas concedidas por conveniência, ausência de revisão periódica e concentração de funções críticas em uma única identidade. O relatório destacou que esses problemas aparecem com frequência em organizações que tratam acesso como questão apenas técnica, e não de governança. Qual alternativa reúne corretamente esse conjunto de erros comuns?",
+    opts:[
+      "ACL estendida, logs detalhados e inventário atualizado.",
+      "Privilégio mínimo, revisão periódica e segregação de funções.",
+      "RBAC, ABAC, MAC e DAC configurados de forma complementar.",
+      "Autenticação, autorização e auditoria integradas ao AAA.",
+      "Permissões excessivas, contas órfãs, falta de segregação e auditoria insuficiente."
+    ],
+    answer:4
+  },
+  {
+    q:"Num escritório de advocacia, o sócio responsável por um conjunto de pastas digitais podia conceder leitura a novos associados assim que eles entravam em um caso. Essa liberdade agilizava o trabalho, mas a auditoria mostrou que delegações mal feitas geravam exposição de documentos a pessoas fora do escopo. O modelo não era centralizado, e o dono do recurso tinha grande influência sobre as permissões. Qual política de acesso esse cenário representa?",
+    opts:[
+      "RBAC, porque todo acesso parte apenas do papel organizacional.",
+      "IPS, porque o bloqueio ocorre em linha sobre o tráfego.",
+      "MAC, porque a decisão depende de classificação formal do documento.",
+      "DAC, porque o proprietário do recurso pode conceder permissões com base na identidade.",
+      "ABAC, porque o horário e a localização decidem o acesso automaticamente."
+    ],
+    answer:3
+  }
+];
+
+const LETTERS='ABCDEFGHIJ';
+let state={questions:[],current:0,answers:{},revealed:{},shuffle:false,showResults:false};
+
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+function initQuiz(){
+  state.questions=state.shuffle?shuffleArray(QUESTIONS.map((_,i)=>i)):QUESTIONS.map((_,i)=>i);
+  state.current=0;state.answers={};state.revealed={};state.showResults=false;render();
+}
+
+function getScore(){
+  let c=0,w=0;
+  for(const idx in state.revealed){const qi=state.questions[idx];if(state.answers[idx]===QUESTIONS[qi].answer)c++;else w++;}
+  return{correct:c,wrong:w,total:QUESTIONS.length};
+}
+
+function render(){
+  const app=document.getElementById('app');
+  const score=getScore();
+  const allRevealed=Object.keys(state.revealed).length===QUESTIONS.length;
+  if(allRevealed&&state.showResults){renderResults(app,score);return;}
+  const qi=state.questions[state.current];
+  const question=QUESTIONS[qi];
+  const selected=state.answers[state.current];
+  const isRevealed=state.revealed[state.current]!==undefined;
+  let html=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>🔍 Detecção de Intrusão e Controle de Acesso — Quiz 7</h1><p>30 questões · DAC, MAC, RBAC, ABAC, ACL, IDS/IPS e AAA</p></div>
+<div class="progress-bar-container"><div class="progress-bar" style="width:${(Object.keys(state.revealed).length/QUESTIONS.length)*100}%"></div></div>
+<div class="progress-info"><span>Questão ${state.current+1} de ${QUESTIONS.length}</span><span>${Object.keys(state.revealed).length}/${QUESTIONS.length} respondidas</span></div>
+<div class="controls-row">
+  <div class="score-panel"><div class="score-chip correct-chip">✓ ${score.correct}</div><div class="score-chip wrong-chip">✗ ${score.wrong}</div></div>
+  <label class="toggle-label"><span>Embaralhar</span><input type="checkbox" ${state.shuffle?'checked':''} onchange="toggleShuffle()"><div class="toggle-track"></div></label>
 </div>
+<div class="nav-dots">${state.questions.map((_,i)=>{
+  let cls='nav-dot';
+  if(i===state.current)cls+=' active';
+  if(state.revealed[i]!==undefined){const ri=state.questions[i];cls+=state.answers[i]===QUESTIONS[ri].answer?' answered-correct':' answered-wrong';}
+  return`<div class="${cls}" onclick="goTo(${i})">${i+1}</div>`;
+}).join('')}</div>
+<div class="question-card"><div class="question-number">Questão ${state.current+1} · (original #${qi+1})</div><div class="question-text">${question.q}</div></div>`;
+  if(isRevealed){
+    const ok=selected===question.answer;
+    html+=`<div class="feedback ${ok?'correct-fb':'wrong-fb'}">${ok?'✓ Correto! Boa!':`✗ Incorreto. A resposta certa é a letra <strong>${LETTERS[question.answer]}</strong>.`}</div>`;
+  }
+  html+=`<div class="options">`;
+  question.opts.forEach((opt,i)=>{
+    let cls='option';
+    if(isRevealed){cls+=' disabled';if(i===question.answer)cls+=' correct-answer';else if(i===selected&&i!==question.answer)cls+=' wrong-answer';}
+    else{if(i===selected)cls+=' selected';}
+    html+=`<div class="${cls}" ${!isRevealed?`onclick="selectOption(${i})"`:''}><div class="letter">${LETTERS[i]}</div><div>${opt}</div></div>`;
+  });
+  html+=`</div><div class="btn-row">`;
+  if(state.current>0)html+=`<button class="btn btn-secondary" onclick="prev()">← Anterior</button>`;
+  if(!isRevealed)html+=`<button class="btn btn-primary" ${selected===undefined?'disabled':''} onclick="confirm()">Confirmar</button>`;
+  else if(state.current<QUESTIONS.length-1)html+=`<button class="btn btn-primary" onclick="next()">Próxima →</button>`;
+  else html+=`<button class="btn btn-primary" onclick="showResults()">Ver Resultado</button>`;
+  html+=`</div>`;
+  app.innerHTML=html;
+}
+
+function renderResults(app,score){
+  const pct=Math.round((score.correct/score.total)*100);
+  let msg=pct===100?'Perfeito! 🎉':pct>=80?'Ótimo desempenho! 💪':pct>=60?'Bom, mas dá pra melhorar!':'Precisa revisar mais. Não desista! 📚';
+  app.innerHTML=`<a href="index.html" class="back-link">← Voltar aos quizzes</a>
+<div class="header"><h1>🔍 Detecção de Intrusão e Controle de Acesso — Quiz 7</h1><p>Resultado Final</p></div>
+<div class="results-card">
+  <div class="score-circle"><div class="big-num">${pct}%</div><div class="label">${score.correct}/${score.total}</div></div>
+  <h2>${msg}</h2><p>${score.correct} corretas · ${score.wrong} erradas</p>
+  <div class="results-actions"><button class="btn btn-secondary" onclick="reviewMode()">Revisar Questões</button><button class="btn btn-primary" onclick="restart()">Refazer Quiz</button></div>
+</div>`;
+}
+
+function selectOption(i){state.answers[state.current]=i;render();}
+function confirm(){state.revealed[state.current]=true;render();}
+function next(){state.current++;render();window.scrollTo({top:0,behavior:'smooth'});}
+function prev(){state.current--;render();window.scrollTo({top:0,behavior:'smooth'});}
+function goTo(i){state.current=i;render();window.scrollTo({top:0,behavior:'smooth'});}
+function showResults(){state.showResults=true;render();}
+function reviewMode(){state.showResults=false;state.current=0;render();}
+function restart(){state.showResults=false;initQuiz();}
+function toggleShuffle(){state.shuffle=!state.shuffle;initQuiz();}
+initQuiz();
+</script>
 </body>
 </html>
